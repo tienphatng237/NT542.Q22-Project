@@ -11,5 +11,21 @@ ansible_winrm_operation_timeout_sec: 60
 # Read timeout (seconds), should be higher than operation timeout.
 ansible_winrm_read_timeout_sec: 90
 
+# Built-in account defaults on a fresh Windows Server VM.
+windows_default_admin_account_name: Administrator
+windows_default_guest_account_name: Guest
+
+# Centralized Identity hardening targets.
+# Change these values if the CIS rename controls should use different names.
+windows_identity_admin_target_name: SysAdmin_Hardened
+windows_identity_guest_target_name: Guest_Hardened
+
+# Keep this aligned with the account name that currently exists on the VM.
+# Fresh VM: Administrator
+# After Identity remediation runs once: usually SysAdmin_Hardened
+windows_active_admin_account_name: Administrator
+
+# Connection credentials must stay literal here; ansible-inventory does not render
+# the Jinja expression early enough for WinRM authentication.
 ansible_user: .\\Administrator
 ansible_password: CHANGE_ME

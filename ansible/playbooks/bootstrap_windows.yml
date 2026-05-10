@@ -1,0 +1,7 @@
+---
+- name: Phase 0 - Windows Management Bootstrap
+  hosts: windows
+  gather_facts: false
+  tasks:
+    - ansible.builtin.include_role:
+        name: windows_management_bootstrap

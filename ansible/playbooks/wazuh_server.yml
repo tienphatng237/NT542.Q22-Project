@@ -1,0 +1,8 @@
+---
+- name: Wazuh Server Deployment
+  hosts: log_servers
+  gather_facts: true
+  become: true
+  tasks:
+    - ansible.builtin.include_role:
+        name: wazuh_manager

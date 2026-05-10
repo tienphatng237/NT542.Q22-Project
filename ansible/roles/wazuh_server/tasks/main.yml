@@ -1,0 +1,28 @@
+---
+- name: Ensure curl is installed on Wazuh server
+  ansible.builtin.package:
+    name: curl
+    state: present
+
+- name: Download Wazuh installation assistant
+  ansible.builtin.get_url:
+    url: "{{ wazuh_install_script_url }}"
+    dest: "{{ wazuh_install_script_path }}"
+    mode: "0755"
+
+- name: Check whether Wazuh server is already installed
+  ansible.builtin.stat:
+    path: "{{ wazuh_server_install_marker }}"
+  register: wazuh_server_marker
+
+- name: Install Wazuh single-node stack
+  ansible.builtin.command:
+    cmd: "{{ wazuh_install_script_path }} {{ wazuh_server_install_args }}"
+  when: not wazuh_server_marker.stat.exists
+
+- name: Show Wazuh server access hint
+  ansible.builtin.debug:
+    msg:
+      - "Wazuh installation complete or already present on {{ inventory_hostname }}."
+      - "Open https://{{ ansible_host | default(inventory_hostname) }} after the install finishes."
+      - "Review the installer summary on the Linux host to capture the generated admin password."

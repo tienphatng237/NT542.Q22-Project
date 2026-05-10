@@ -1,0 +1,3 @@
+---
+- import_playbook: wazuh_server.yml
+- import_playbook: wazuh_agent.yml

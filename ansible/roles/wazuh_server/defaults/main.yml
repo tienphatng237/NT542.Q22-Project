@@ -1,0 +1,4 @@
+wazuh_install_script_url: "https://packages.wazuh.com/4.14/wazuh-install.sh"
+wazuh_install_script_path: "/tmp/wazuh-install.sh"
+wazuh_server_install_args: "-a"
+wazuh_server_install_marker: "/var/ossec/bin/wazuh-control"

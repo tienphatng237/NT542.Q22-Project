@@ -1,0 +1,16 @@
+wazuh_agent_version: "4.14.4-1"
+wazuh_agent_msi_name: "wazuh-agent-{{ wazuh_agent_version }}.msi"
+wazuh_agent_download_url: "https://packages.wazuh.com/4.x/windows/{{ wazuh_agent_msi_name }}"
+wazuh_agent_download_dir: "C:\\Temp\\Wazuh"
+wazuh_agent_msi_path: "{{ wazuh_agent_download_dir }}\\{{ wazuh_agent_msi_name }}"
+wazuh_agent_service_name: WazuhSvc
+wazuh_agent_install_dir: "C:\\Program Files (x86)\\ossec-agent"
+wazuh_agent_registration_password: ""
+wazuh_agent_force_reenroll: false
+wazuh_agent_verify_enrollment: true
+wazuh_agent_enrollment_check_retries: 10
+wazuh_agent_enrollment_check_delay: 6
+wazuh_agent_sca_interval: "12h"
+wazuh_agent_enrollment_password_arg: >-
+  {{ '' if wazuh_agent_registration_password | length == 0
+     else 'WAZUH_REGISTRATION_PASSWORD=\"' ~ wazuh_agent_registration_password ~ '\"' }}

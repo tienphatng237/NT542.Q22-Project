@@ -1,0 +1,145 @@
+---
+- name: Ensure Wazuh manager address is configured
+  ansible.builtin.assert:
+    that:
+      - wazuh_manager_address | length > 0
+    fail_msg: "Set wazuh_manager_address or define a log_servers host before deploying Wazuh agents."
+
+- name: Select Wazuh manager inventory host for enrollment checks
+  ansible.builtin.set_fact:
+    wazuh_manager_inventory_host: "{{ (groups['log_servers'] | default([])) | first | default('') }}"
+
+- name: Check whether Wazuh agent is already installed locally
+  ansible.windows.win_service_info:
+    name: "{{ wazuh_agent_service_name }}"
+  register: wazuh_agent_service_info
+
+- name: Check whether manager already knows this agent
+  ansible.builtin.shell: >-
+    /var/ossec/bin/agent_control -l | grep -F "Name: {{ inventory_hostname }},"
+  delegate_to: "{{ wazuh_manager_inventory_host }}"
+  become: true
+  register: wazuh_manager_agent_lookup
+  changed_when: false
+  failed_when: false
+  when: wazuh_manager_inventory_host | length > 0
+
+- name: Derive Wazuh enrollment state
+  ansible.builtin.set_fact:
+    wazuh_agent_installed_locally: "{{ (wazuh_agent_service_info.services | default([]) | length) > 0 }}"
+    wazuh_agent_registered_on_manager: >-
+      {{ (wazuh_manager_inventory_host | length > 0)
+         and (wazuh_manager_agent_lookup.rc | default(1)) == 0 }}
+
+- name: Decide whether re-enrollment is required
+  ansible.builtin.set_fact:
+    wazuh_agent_reenroll_required: >-
+      {{ (wazuh_agent_force_reenroll | bool)
+         or (wazuh_agent_installed_locally | bool and not (wazuh_agent_registered_on_manager | bool)) }}
+
+- name: Explain Wazuh enrollment decision
+  ansible.builtin.debug:
+    msg:
+      - "Local agent installed: {{ wazuh_agent_installed_locally }}"
+      - "Manager already knows agent: {{ wazuh_agent_registered_on_manager }}"
+      - "Re-enrollment required: {{ wazuh_agent_reenroll_required }}"
+
+- name: Ensure Wazuh download directory exists
+  ansible.windows.win_file:
+    path: "{{ wazuh_agent_download_dir }}"
+    state: directory
+
+- name: Download Wazuh Windows agent installer
+  ansible.windows.win_get_url:
+    url: "{{ wazuh_agent_download_url }}"
+    dest: "{{ wazuh_agent_msi_path }}"
+
+- name: Build Wazuh agent installer arguments
+  ansible.builtin.set_fact:
+    wazuh_agent_package_arguments: >-
+      /q
+      WAZUH_MANAGER="{{ wazuh_manager_address }}"
+      WAZUH_AGENT_NAME="{{ inventory_hostname }}"
+      {{ ('WAZUH_AGENT_GROUP="' ~ wazuh_agent_group ~ '"') if (wazuh_agent_group | default('') | length > 0) else '' }}
+      {{ wazuh_agent_enrollment_password_arg }}
+
+- name: Stop Wazuh agent service before re-enrollment
+  ansible.windows.win_service:
+    name: "{{ wazuh_agent_service_name }}"
+    state: stopped
+  failed_when: false
+  when: wazuh_agent_reenroll_required | bool and wazuh_agent_installed_locally | bool
+
+- name: Uninstall Wazuh Windows agent for clean re-enrollment
+  ansible.windows.win_package:
+    path: "{{ wazuh_agent_msi_path }}"
+    state: absent
+  when: wazuh_agent_reenroll_required | bool and wazuh_agent_installed_locally | bool
+
+- name: Remove stale Wazuh client key before re-enrollment
+  ansible.windows.win_file:
+    path: "{{ wazuh_agent_install_dir }}\\client.keys"
+    state: absent
+  when: wazuh_agent_reenroll_required | bool
+
+- name: Install or update Wazuh Windows agent
+  ansible.windows.win_package:
+    path: "{{ wazuh_agent_msi_path }}"
+    arguments: "{{ wazuh_agent_package_arguments | regex_replace('\\s+', ' ') | trim }}"
+    state: present
+
+- name: Ensure Wazuh agent service is started
+  ansible.windows.win_service:
+    name: "{{ wazuh_agent_service_name }}"
+    start_mode: auto
+    state: started
+
+- name: Configure Wazuh SCA interval
+  ansible.windows.win_shell: |
+    $configPath = "{{ wazuh_agent_install_dir }}\ossec.conf"
+    [xml]$configXml = Get-Content -Path $configPath
+    $scaNode = $configXml.ossec_config.sca
+    if (-not $scaNode) {
+      throw "Unable to find <sca> section in $configPath"
+    }
+    $currentInterval = [string]$scaNode.interval
+    $targetInterval = "{{ wazuh_agent_sca_interval }}"
+    if ($currentInterval -ne $targetInterval) {
+      $scaNode.interval = $targetInterval
+      $configXml.Save($configPath)
+      Write-Output "CHANGED:$currentInterval->$targetInterval"
+    } else {
+      Write-Output "UNCHANGED:$currentInterval"
+    }
+  register: wazuh_agent_sca_interval_result
+  changed_when: "'CHANGED:' in wazuh_agent_sca_interval_result.stdout"
+
+- name: Restart Wazuh agent service after SCA interval change
+  ansible.windows.win_service:
+    name: "{{ wazuh_agent_service_name }}"
+    state: restarted
+  when: wazuh_agent_sca_interval_result.changed
+
+- name: Wait until manager registers the agent
+  ansible.builtin.shell: >-
+    /var/ossec/bin/agent_control -l | grep -F "Name: {{ inventory_hostname }},"
+  delegate_to: "{{ wazuh_manager_inventory_host }}"
+  become: true
+  register: wazuh_agent_enrollment_wait
+  changed_when: false
+  failed_when: false
+  retries: "{{ wazuh_agent_enrollment_check_retries }}"
+  delay: "{{ wazuh_agent_enrollment_check_delay }}"
+  until: wazuh_agent_enrollment_wait.rc == 0
+  when:
+    - wazuh_agent_verify_enrollment | bool
+    - wazuh_manager_inventory_host | length > 0
+
+- name: Show Wazuh agent enrollment hint
+  ansible.builtin.debug:
+    msg:
+      - "Wazuh agent installed on {{ inventory_hostname }}."
+      - "Manager target: {{ wazuh_manager_address }}"
+      - "Manager already knows agent: {{ wazuh_agent_registered_on_manager }}"
+      - "Re-enrollment required: {{ wazuh_agent_reenroll_required }}"
+      - "Verify enrollment in the Wazuh dashboard after the service starts."

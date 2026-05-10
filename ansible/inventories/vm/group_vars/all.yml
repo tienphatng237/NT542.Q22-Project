@@ -36,3 +36,28 @@ pipeline_role_matrix:
     audit_script_name: System-Hardening-Antimalware-Audit.ps1
     remediation_script_name: System-Hardening-Antimalware-Remediation.ps1
     post_audit_script_name: System-Hardening-Antimalware-Post-Audit.ps1
+
+# External validation: HardeningKitty
+hardeningkitty_enabled: true
+hardeningkitty_local_root: "{{ playbook_dir }}/../../tooling/hardeningkitty"
+hardeningkitty_local_module_dir: "{{ hardeningkitty_local_root }}/module"
+hardeningkitty_local_lists_dir: "{{ hardeningkitty_local_root }}/lists"
+
+hardeningkitty_remote_root: "{{ pipeline_remote_root }}\\Validation\\HardeningKitty"
+hardeningkitty_remote_module_dir: "{{ hardeningkitty_remote_root }}\\module"
+hardeningkitty_remote_lists_dir: "{{ hardeningkitty_remote_root }}\\lists"
+hardeningkitty_remote_output_dir: "{{ pipeline_remote_root }}\\Validation\\Reports\\HardeningKitty"
+
+# Default profile-to-list mapping for Windows Server 2022 role-based validation.
+# Use per-host overrides only when a node needs a different list than its role.
+hardeningkitty_finding_list_by_profile:
+  dc: finding_list_msft_security_baseline_windows_server_2022_21h2_dc_machine.csv
+  member: finding_list_msft_security_baseline_windows_server_2022_21h2_member_machine.csv
+
+hardeningkitty_finding_list_by_host: {}
+
+# Wazuh centralized monitoring
+# Agents enroll against the first Linux host in the log_servers inventory group.
+wazuh_manager_address: "{{ hostvars[groups['log_servers'][0]].ansible_host if (groups['log_servers'] | default([]) | length > 0) else '' }}"
+wazuh_agent_group: windows-servers
+wazuh_agent_sca_interval: 2m

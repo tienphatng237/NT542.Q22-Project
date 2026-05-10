@@ -1,0 +1,137 @@
+---
+- name: Check local Wazuh manager install script exists
+  ansible.builtin.stat:
+    path: "{{ wazuh_manager_local_install_script }}"
+  delegate_to: localhost
+  become: false
+  register: wazuh_manager_script_stat
+
+- name: Ensure Wazuh manager install script is present
+  ansible.builtin.assert:
+    that:
+      - wazuh_manager_script_stat.stat.exists
+    fail_msg: "Missing local installer script: {{ wazuh_manager_local_install_script }}"
+
+- name: Check whether Wazuh manager is already installed
+  ansible.builtin.stat:
+    path: "{{ wazuh_manager_install_marker }}"
+  register: wazuh_manager_marker
+
+- name: Copy Wazuh manager install script to Linux host
+  ansible.builtin.copy:
+    src: "{{ wazuh_manager_local_install_script }}"
+    dest: "{{ wazuh_manager_remote_install_script }}"
+    mode: "0755"
+  when: not wazuh_manager_marker.stat.exists
+
+- name: Install Wazuh manager stack
+  ansible.builtin.command:
+    cmd: "{{ wazuh_manager_remote_install_script }}"
+  environment: "{{ wazuh_manager_install_env }}"
+  register: wazuh_manager_install
+  when: not wazuh_manager_marker.stat.exists
+
+- name: Refresh Wazuh manager install marker after installation
+  ansible.builtin.stat:
+    path: "{{ wazuh_manager_install_marker }}"
+  register: wazuh_manager_marker
+
+- name: Build effective Wazuh agent group list
+  ansible.builtin.set_fact:
+    wazuh_manager_effective_agent_groups: >-
+      {{
+        (wazuh_manager_agent_groups | default([]))
+        + ([wazuh_agent_group] if (wazuh_agent_group | default('') | length > 0) else [])
+      | map('string') | map('trim') | reject('equalto', '') | unique | list }}
+
+- name: Compute desired Wazuh dashboard password fingerprint
+  ansible.builtin.set_fact:
+    wazuh_dashboard_admin_password_sha256: "{{ wazuh_dashboard_admin_password | hash('sha256') }}"
+  when: wazuh_dashboard_admin_password | default('') | length > 0
+
+- name: Check stored Wazuh dashboard password fingerprint
+  ansible.builtin.stat:
+    path: "{{ wazuh_dashboard_password_state_file }}"
+  register: wazuh_dashboard_password_state
+  when:
+    - wazuh_manager_marker.stat.exists
+    - wazuh_dashboard_admin_password | default('') | length > 0
+
+- name: Read stored Wazuh dashboard password fingerprint
+  ansible.builtin.slurp:
+    src: "{{ wazuh_dashboard_password_state_file }}"
+  register: wazuh_dashboard_password_state_content
+  when:
+    - wazuh_manager_marker.stat.exists
+    - wazuh_dashboard_admin_password | default('') | length > 0
+    - wazuh_dashboard_password_state.stat.exists
+
+- name: Decide whether Wazuh dashboard admin password must be updated
+  ansible.builtin.set_fact:
+    wazuh_dashboard_password_update_required: >-
+      {{
+        (wazuh_dashboard_admin_password | default('') | length > 0)
+        and (
+          (not wazuh_dashboard_password_state.stat.exists)
+          or
+          ((wazuh_dashboard_password_state_content.content | b64decode | trim)
+            != wazuh_dashboard_admin_password_sha256)
+        )
+      }}
+  when:
+    - wazuh_manager_marker.stat.exists
+    - wazuh_dashboard_admin_password | default('') | length > 0
+
+- name: Set Wazuh dashboard admin password
+  ansible.builtin.command:
+    cmd: >-
+      {{ wazuh_dashboard_password_tool }}
+      -u admin
+      -p {{ wazuh_dashboard_admin_password }}
+  register: wazuh_dashboard_password_update
+  no_log: true
+  when:
+    - wazuh_manager_marker.stat.exists
+    - wazuh_dashboard_password_update_required | default(false)
+
+- name: Persist Wazuh dashboard password fingerprint
+  ansible.builtin.copy:
+    dest: "{{ wazuh_dashboard_password_state_file }}"
+    content: "{{ wazuh_dashboard_admin_password_sha256 }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  when:
+    - wazuh_manager_marker.stat.exists
+    - wazuh_dashboard_password_update_required | default(false)
+
+- name: List existing Wazuh agent groups
+  ansible.builtin.command:
+    cmd: /var/ossec/bin/agent_groups -l
+  register: wazuh_manager_group_list
+  changed_when: false
+  when:
+    - wazuh_manager_marker.stat.exists
+    - wazuh_manager_effective_agent_groups | length > 0
+
+- name: Ensure Wazuh agent groups exist on manager
+  ansible.builtin.command:
+    cmd: /var/ossec/bin/agent_groups -a -g {{ item }} -q
+  loop: "{{ wazuh_manager_effective_agent_groups }}"
+  when:
+    - wazuh_manager_marker.stat.exists
+    - wazuh_manager_effective_agent_groups | length > 0
+    - item not in wazuh_manager_group_list.stdout
+
+- name: Show Wazuh manager access hint
+  ansible.builtin.debug:
+    msg:
+      - "Wazuh manager installation complete or already present on {{ inventory_hostname }}."
+      - "Dashboard URL: https://{{ ansible_host | default(inventory_hostname) }}"
+      - "Installer log on remote host: {{ wazuh_manager_install_log }}"
+      - >-
+        {{
+          'Dashboard admin password is managed by wazuh_dashboard_admin_password.'
+          if (wazuh_dashboard_admin_password | default('') | length > 0)
+          else 'Capture or reset the admin password manually if needed.'
+        }}

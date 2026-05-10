@@ -1,0 +1,7 @@
+---
+- name: Wazuh Agent Deployment
+  hosts: windows
+  gather_facts: false
+  tasks:
+    - ansible.builtin.include_role:
+        name: wazuh_agent

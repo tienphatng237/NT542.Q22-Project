@@ -1,4 +1,5 @@
-# NT542.Q22-Project
+# NT542.Q22 - Đồ án cuối kì
+# TRIỂN KHAI BẢO MẬT CHO HỆ THỐNG WINDOWS SERVER 2022 THEO TIÊU CHUẨN CIS BENCHMARK 
 
 ## 1. Tổng quan
 ```mermaid
@@ -28,7 +29,14 @@ flowchart LR
   G --> I[Compliance / Vulnerability / MITRE]
 ```
 
-## 2. Các tiêu chí triển khai
+## 2. Các hạng mục triển khai
+
+| Thành viên | Hạng mục | Các mục CIS phụ trách | Trọng tâm rủi ro |
+| --- | --- | --- | --- |
+| **Như Trang** | Identity & Access Control | `Mục 1 - Account Policies` <br>`Mục 2.2 - User Rights Assignment`<br>`Mục 2.3.1 - Security Options (Accounts)` | Brute-force và leo thang đặc quyền |
+| **Trung Kiên** | Network & Services Security | `Mục 5 - System Services`<br>`Mục 9 - Windows Defender Firewall`<br>`Mục 18.6 - Administrative Templates (Network)` | Tấn công qua mạng, khai thác dịch vụ (PrintNightmare) |
+| **Phú Thuận** | Auditing & Monitoring | `Mục 17 - Advanced Audit Policy Configuration`<br>`Mục 18.10.26 - Event Log Service`<br>`Mục 2.3.2 - Audit (Security Options)` | Thiếu bằng chứng điều tra, không phát hiện xâm nhập |
+| **Tiến Phát** | System Hardening & Antimalware | `Mục 18.10.42 - Microsoft Defender Antivirus`<br>`Mục 18.4 & 18.5 - MS Security Guide & MSS (Legacy)`<br>`Mục 2.3.17 - User Account Control (UAC)`<br>`Mục 18.9.5 - Device Guard`<br>`Mục 18.9.27 - Local Security Authority (LSA)`<br>`Mục 18.10.8 - AutoPlay Policies`<br>`Mục 18.9.13 - Early Launch Antimalware (ELAM)`<br>`Mục 18.10.77 - Windows Defender SmartScreen` | Mã độc thực thi trái phép, đánh cắp chứng thực cục bộ |
 
 ## 3. Triển khai các công cụ
 
@@ -44,20 +52,20 @@ Chạy các lệnh sau trong thư mục `ansible`:
 
 ```bash
 cd ansible
-ansible-playbook playbooks/bootstrap_windows.yml
-ansible-playbook playbooks/wazuh.yml
+ansible-playbook playbooks/bootstrap/bootstrap_windows.yml
+ansible-playbook playbooks/wazuh/wazuh.yml
 ```
 
 Trong đó:
-- `bootstrap_windows.yml`: mở và duy trì kênh quản trị từ xa trên các máy Windows
-- `wazuh.yml`: chạy toàn bộ quy trình cài `Wazuh manager` trên `log01` và `Wazuh agent` trên các máy Windows
+- `bootstrap/bootstrap_windows.yml`: mở và duy trì kênh quản trị từ xa trên các máy Windows
+- `wazuh/wazuh.yml`: chạy toàn bộ quy trình cài `Wazuh manager` trên `log01` và `Wazuh agent` trên các máy Windows
 
 Nếu cần chạy tách riêng từng phần, có thể dùng:
 
 ```bash
 cd ansible
-ansible-playbook playbooks/wazuh_server.yml
-ansible-playbook playbooks/wazuh_agent.yml
+ansible-playbook playbooks/wazuh/wazuh_server.yml
+ansible-playbook playbooks/wazuh/wazuh_agent.yml
 ```
 
 #### Tài khoản mặc định của Wazuh dashboard
@@ -66,3 +74,17 @@ Role `wazuh_manager` hiện đã tự đặt mật khẩu dashboard theo biến 
 Thông tin mặc định hiện tại:
 - user: `admin`
 - password: `AdminWazuh9*`
+
+### 3.2 HardeningKitty
+
+Để tránh commit 2 file module quá lớn, tải tự động từ upstream trước khi chạy pipeline:
+
+```bash
+mkdir -p tooling/hardeningkitty/module
+curl -fsSL -o tooling/hardeningkitty/module/HardeningKitty.psd1 \
+  https://raw.githubusercontent.com/0x6d69636b/windows_hardening/master/HardeningKitty.psd1
+curl -fsSL -o tooling/hardeningkitty/module/HardeningKitty.psm1 \
+  https://raw.githubusercontent.com/0x6d69636b/windows_hardening/master/HardeningKitty.psm1
+```
+
+## 4. Triển khai quy trình benchmark

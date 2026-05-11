@@ -1,4 +1,4 @@
-wazuh_manager_local_install_script: "{{ playbook_dir }}/../../scripts/install-wazuh-manager.sh"
+wazuh_manager_local_install_script: "{{ inventory_dir }}/../../../scripts/install-wazuh-manager.sh"
 wazuh_manager_remote_install_script: "/tmp/install-wazuh-manager.sh"
 wazuh_manager_install_log: "/tmp/wazuh-install.log"
 wazuh_manager_install_marker: "/var/ossec/bin/wazuh-control"

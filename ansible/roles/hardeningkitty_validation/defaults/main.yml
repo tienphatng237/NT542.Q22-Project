@@ -1,0 +1,12 @@
+role_slug: hardeningkitty-validation
+hardeningkitty_local_module_manifest: "{{ hardeningkitty_local_module_dir }}/HardeningKitty.psd1"
+hardeningkitty_local_module_script: "{{ hardeningkitty_local_module_dir }}/HardeningKitty.psm1"
+hardeningkitty_profile: "{{ hostvars[inventory_hostname].hardeningkitty_profile | default('') }}"
+hardeningkitty_finding_list: "{{ hardeningkitty_finding_list_by_host[inventory_hostname] | default(hardeningkitty_finding_list_by_profile[hardeningkitty_profile] | default('')) }}"
+hardeningkitty_remote_module_manifest: "{{ hardeningkitty_remote_module_dir }}\\HardeningKitty.psd1"
+hardeningkitty_remote_module_script: "{{ hardeningkitty_remote_module_dir }}\\HardeningKitty.psm1"
+hardeningkitty_report_basename: "HardeningKitty-{{ inventory_hostname }}"
+hardeningkitty_remote_report_file: "{{ hardeningkitty_remote_output_dir }}\\{{ hardeningkitty_report_basename }}.csv"
+hardeningkitty_remote_log_file: "{{ hardeningkitty_remote_output_dir }}\\{{ hardeningkitty_report_basename }}.log"
+hardeningkitty_local_summary_txt: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/{{ hardeningkitty_report_basename }}-summary.txt"
+hardeningkitty_local_summary_csv: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/{{ hardeningkitty_report_basename }}-summary.csv"

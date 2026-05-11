@@ -1,0 +1,206 @@
+---
+- name: Resolve HardeningKitty finding list path
+  ansible.builtin.set_fact:
+    hardeningkitty_local_finding_list_path: >-
+      {{ hardeningkitty_local_lists_dir }}/{{ hardeningkitty_finding_list }}
+
+- name: Check HardeningKitty module manifest exists locally
+  ansible.builtin.stat:
+    path: "{{ hardeningkitty_local_module_manifest }}"
+  delegate_to: localhost
+  register: hardeningkitty_module_manifest_stat
+
+- name: Check HardeningKitty module script exists locally
+  ansible.builtin.stat:
+    path: "{{ hardeningkitty_local_module_script }}"
+  delegate_to: localhost
+  register: hardeningkitty_module_script_stat
+
+- name: Check HardeningKitty finding list exists locally
+  ansible.builtin.stat:
+    path: "{{ hardeningkitty_local_finding_list_path }}"
+  delegate_to: localhost
+  register: hardeningkitty_finding_list_stat
+  when: hardeningkitty_finding_list | length > 0
+
+- name: Skip HardeningKitty validation when role is disabled
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: hardeningkitty_enabled=false"
+  when: not hardeningkitty_enabled | bool
+
+- name: Skip HardeningKitty validation when module payload is missing
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: add module files under {{ hardeningkitty_local_module_dir }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - not hardeningkitty_module_manifest_stat.stat.exists or not hardeningkitty_module_script_stat.stat.exists
+
+- name: Skip HardeningKitty validation when finding list is not configured
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: configure hardeningkitty_finding_list_by_host for {{ inventory_hostname }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length == 0
+
+- name: Skip HardeningKitty validation when finding list file is missing
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: missing {{ hardeningkitty_local_finding_list_path }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - not hardeningkitty_finding_list_stat.stat.exists
+
+- name: Ensure remote HardeningKitty directories exist
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ hardeningkitty_remote_root }}"
+    - "{{ hardeningkitty_remote_module_dir }}"
+    - "{{ hardeningkitty_remote_lists_dir }}"
+    - "{{ hardeningkitty_remote_output_dir }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Copy HardeningKitty module files to Windows host
+  ansible.windows.win_copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - src: "{{ hardeningkitty_local_module_manifest }}"
+      dest: "{{ hardeningkitty_remote_module_manifest }}"
+    - src: "{{ hardeningkitty_local_module_script }}"
+      dest: "{{ hardeningkitty_remote_module_script }}"
+    - src: "{{ hardeningkitty_local_finding_list_path }}"
+      dest: "{{ hardeningkitty_remote_lists_dir }}\\{{ hardeningkitty_finding_list }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Execute HardeningKitty audit
+  ansible.windows.win_shell: |
+    Import-Module "{{ hardeningkitty_remote_module_script }}"
+    Invoke-HardeningKitty `
+      -Mode Audit `
+      -Report `
+      -Log `
+      -ReportFile "{{ hardeningkitty_remote_report_file }}" `
+      -LogFile "{{ hardeningkitty_remote_log_file }}" `
+      -FileFindingList "{{ hardeningkitty_remote_lists_dir }}\{{ hardeningkitty_finding_list }}"
+  register: hardeningkitty_exec
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Show HardeningKitty output
+  ansible.builtin.debug:
+    var: hardeningkitty_exec.stdout_lines
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Ensure local HardeningKitty report directory exists
+  ansible.builtin.file:
+    path: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Fetch HardeningKitty CSV report
+  ansible.builtin.fetch:
+    src: "{{ hardeningkitty_remote_report_file }}"
+    dest: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/"
+    flat: true
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Fetch HardeningKitty log file
+  ansible.builtin.fetch:
+    src: "{{ hardeningkitty_remote_log_file }}"
+    dest: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/"
+    flat: true
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Extract HardeningKitty summary line
+  ansible.builtin.set_fact:
+    hardeningkitty_summary_line: >-
+      {{
+        (
+          hardeningkitty_exec.stdout_lines
+          | select('search', 'Your HardeningKitty score is:')
+          | list
+          | first
+          | default('')
+        ) | trim
+      }}
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+
+- name: Write HardeningKitty text summary
+  ansible.builtin.copy:
+    dest: "{{ hardeningkitty_local_summary_txt }}"
+    mode: "0644"
+    content: |
+      Host: {{ inventory_hostname }}
+      Finding List: {{ hardeningkitty_finding_list }}
+      Summary: {{ hardeningkitty_summary_line | regex_replace('^\[\*\]\s*', '') }}
+  delegate_to: localhost
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+    - hardeningkitty_summary_line | length > 0
+
+- name: Write HardeningKitty CSV summary
+  ansible.builtin.copy:
+    dest: "{{ hardeningkitty_local_summary_csv }}"
+    mode: "0644"
+    content: |-
+      host,finding_list,score,total_checks,passed,low,medium,high
+      {{ inventory_hostname }},{{ hardeningkitty_finding_list }},{{ hardeningkitty_summary_line | regex_replace('^.*score is: ([0-9.]+)\. HardeningKitty Statistics: Total checks: ([0-9]+) - Passed: ([0-9]+), Low: ([0-9]+), Medium: ([0-9]+), High: ([0-9]+)\.$', '\1,\2,\3,\4,\5,\6') }}
+  delegate_to: localhost
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - hardeningkitty_finding_list_stat.stat.exists
+    - hardeningkitty_summary_line | length > 0

@@ -31,7 +31,21 @@
   ansible.windows.win_shell: >-
     powershell -ExecutionPolicy Bypass
     -File "{{ role_remote_script_dir }}\\{{ role_script_name }}"
+    -AdminAccountNewName "{{ windows_identity_admin_target_name }}"
+    -GuestAccountNewName "{{ windows_identity_guest_target_name }}"
+    -AdminAccountPassword "{{ windows_identity_admin_password }}"
   register: role_remediation_exec
+  when: role_script_stat.stat.exists
+
+- name: Switch Ansible to hardened Windows admin account after remediation
+  ansible.builtin.set_fact:
+    windows_active_admin_account_name: "{{ windows_identity_admin_target_name }}"
+    ansible_user: "{{ windows_identity_admin_target_name }}"
+    ansible_password: "{{ windows_identity_admin_password }}"
+  when: role_script_stat.stat.exists
+
+- name: Reset WinRM connection after admin account rename
+  meta: reset_connection
   when: role_script_stat.stat.exists
 
 - name: Show remediation output

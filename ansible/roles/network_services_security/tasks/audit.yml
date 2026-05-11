@@ -21,6 +21,18 @@
     state: directory
   when: role_script_stat.stat.exists
 
+- name: Ensure remote template directory exists
+  ansible.windows.win_file:
+    path: "{{ pipeline_remote_templates_root | default(pipeline_remote_root ~ '\\templates') }}"
+    state: directory
+  when: role_script_stat.stat.exists
+
+- name: Copy shared HTML/CSS templates to Windows host
+  ansible.windows.win_copy:
+    src: "{{ pipeline_local_templates_root | default(pipeline_local_root ~ '/templates') }}/"
+    dest: "{{ pipeline_remote_templates_root | default(pipeline_remote_root ~ '\\templates') }}\\"
+  when: role_script_stat.stat.exists
+
 - name: Copy audit script to Windows host
   ansible.windows.win_copy:
     src: "{{ role_script_src }}"

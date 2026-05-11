@@ -1,7 +1,13 @@
-# Keep the reports directory structure, but ignore generated report artifacts.
-pipeline/reports/**/*.html
-pipeline/reports/**/*.json
+# Generated reports and local artifacts
+pipeline/reports/
 !pipeline/reports/.gitkeep
+documents/
 
 # Local secret inventory vars (do not commit credentials)
 ansible/inventories/**/group_vars/windows.yml
+
+# HardeningKitty: keep module + 2 baseline lists only
+tooling/hardeningkitty/source/
+tooling/hardeningkitty/lists/*
+!tooling/hardeningkitty/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_dc_machine.csv
+!tooling/hardeningkitty/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_member_machine.csv

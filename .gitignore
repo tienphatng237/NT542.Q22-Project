@@ -9,15 +9,3 @@ ansible/inventories/**/group_vars/windows.yml
 # Tooling artifacts (large): ignore all by default, keep placeholder
 tooling/*
 !tooling/.gitkeep
-
-# HardeningKitty: keep only 2 baseline lists used by pipeline
-!tooling/hardeningkitty/
-tooling/hardeningkitty/*
-!tooling/hardeningkitty/lists/
-tooling/hardeningkitty/lists/*
-!tooling/hardeningkitty/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_dc_machine.csv
-!tooling/hardeningkitty/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_member_machine.csv
-
-# Ignore heavy HardeningKitty sources/modules
-tooling/hardeningkitty/source/
-tooling/hardeningkitty/module/

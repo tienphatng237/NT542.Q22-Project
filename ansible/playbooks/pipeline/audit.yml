@@ -1,6 +1,6 @@
 ---
 - name: Phase 1 - Audit
-  hosts: windows
+  hosts: windows_runtime
   gather_facts: false
   tasks:
     - ansible.builtin.include_role:

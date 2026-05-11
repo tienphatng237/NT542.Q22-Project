@@ -1,0 +1,39 @@
+---
+- name: Load Windows inventory vars for runtime probing
+  ansible.builtin.include_vars:
+    file: "{{ windows_runtime_resolver_inventory_vars_file }}"
+    name: windows_inventory_vars
+
+- name: Build Windows account candidate lists
+  ansible.builtin.set_fact:
+    windows_runtime_hosts: "{{ query('inventory_hostnames', 'windows') }}"
+    windows_account_candidates:
+      - name: "{{ windows_inventory_vars.windows_default_admin_account_name }}"
+        password: "{{ windows_inventory_vars.windows_initial_admin_password }}"
+      - name: "{{ windows_inventory_vars.windows_identity_admin_target_name }}"
+        password: "{{ windows_inventory_vars.windows_identity_admin_password }}"
+    windows_account_candidate_prefixes: >-
+      {{
+        windows_inventory_vars.windows_account_candidate_prefixes
+        | default(windows_runtime_resolver_account_candidate_prefixes_default)
+      }}
+
+- name: Register candidate WinRM probe hosts
+  ansible.builtin.add_host:
+    name: >-
+      probe__{{ item.0 }}__{{ item.1.name | regex_replace('[^A-Za-z0-9]+', '_') }}__{{ item.2 | regex_replace('[^A-Za-z0-9]+', '_') }}
+    groups: "{{ windows_runtime_resolver_probe_group }}"
+    ansible_host: "{{ hostvars[item.0].ansible_host }}"
+    ansible_connection: "{{ windows_inventory_vars.ansible_connection }}"
+    ansible_port: "{{ windows_inventory_vars.ansible_port }}"
+    ansible_winrm_transport: "{{ windows_inventory_vars.ansible_winrm_transport }}"
+    ansible_winrm_server_cert_validation: "{{ windows_inventory_vars.ansible_winrm_server_cert_validation }}"
+    ansible_winrm_operation_timeout_sec: "{{ windows_inventory_vars.ansible_winrm_operation_timeout_sec }}"
+    ansible_winrm_read_timeout_sec: "{{ windows_inventory_vars.ansible_winrm_read_timeout_sec }}"
+    ansible_user: "{{ item.2 }}{{ item.1.name }}"
+    ansible_password: "{{ item.1.password }}"
+    probe_target_host: "{{ item.0 }}"
+    probe_account_name: "{{ item.1.name }}"
+    probe_account_password: "{{ item.1.password }}"
+    probe_account_prefix: "{{ item.2 }}"
+  loop: "{{ windows_runtime_hosts | product(windows_account_candidates, windows_account_candidate_prefixes) | list }}"

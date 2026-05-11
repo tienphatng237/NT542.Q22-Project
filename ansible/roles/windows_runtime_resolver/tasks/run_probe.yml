@@ -1,0 +1,14 @@
+---
+- name: Probe candidate WinRM login
+  ansible.windows.win_ping:
+  register: windows_probe_result
+  ignore_errors: true
+  ignore_unreachable: true
+
+- name: Record probe result
+  ansible.builtin.set_fact:
+    windows_probe_success: >-
+      {{
+        (windows_probe_result is succeeded)
+        and ((windows_probe_result.ping | default('')) == 'pong')
+      }}

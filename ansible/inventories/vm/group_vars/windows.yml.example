@@ -2,8 +2,8 @@
 ansible_connection: winrm
 # Default WinRM HTTP port (5985). Use 5986 when WinRM HTTPS is configured.
 ansible_port: 5985
-# Authentication transport for WinRM (NTLM works well in workgroup/lab setups).
-ansible_winrm_transport: ntlm
+# Authentication transport for WinRM.
+ansible_winrm_transport: basic
 # Ignore TLS certificate validation (safe for lab/self-signed cert environments).
 ansible_winrm_server_cert_validation: ignore
 # Per-operation timeout (seconds) for WinRM commands.
@@ -15,17 +15,29 @@ ansible_winrm_read_timeout_sec: 90
 windows_default_admin_account_name: Administrator
 windows_default_guest_account_name: Guest
 
+# Password used on a fresh Windows VM before Identity remediation hardens the account.
+windows_initial_admin_password: CHANGE_ME_INITIAL
+
 # Centralized Identity hardening targets.
 # Change these values if the CIS rename controls should use different names.
 windows_identity_admin_target_name: SysAdmin_Hardened
 windows_identity_guest_target_name: Guest_Hardened
+
+# Managed password that Identity remediation will apply to the hardened admin account.
+windows_identity_admin_password: CHANGE_ME_HARDENED
+
+# Candidate prefixes Ansible should try when auto-detecting the working WinRM account.
+windows_account_candidate_prefixes:
+  - .\\
+  - ""
+  - group7.local\\
+  - group7\\
 
 # Keep this aligned with the account name that currently exists on the VM.
 # Fresh VM: Administrator
 # After Identity remediation runs once: usually SysAdmin_Hardened
 windows_active_admin_account_name: Administrator
 
-# Connection credentials must stay literal here; ansible-inventory does not render
-# the Jinja expression early enough for WinRM authentication.
-ansible_user: .\\Administrator
-ansible_password: CHANGE_ME
+# Base inventory credentials: kept literal for direct Ansible commands and bootstrap on fresh VMs.
+ansible_user: Administrator
+ansible_password: CHANGE_ME_INITIAL

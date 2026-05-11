@@ -1,5 +1,5 @@
 # Global pipeline paths
-pipeline_local_root: "{{ playbook_dir }}/../../pipeline"
+pipeline_local_root: "{{ inventory_dir }}/../../../pipeline"
 pipeline_local_reports_root: "{{ pipeline_local_root }}/reports"
 
 pipeline_remote_root: 'C:\\CIS-Automation'
@@ -39,7 +39,7 @@ pipeline_role_matrix:
 
 # External validation: HardeningKitty
 hardeningkitty_enabled: true
-hardeningkitty_local_root: "{{ playbook_dir }}/../../tooling/hardeningkitty"
+hardeningkitty_local_root: "{{ inventory_dir }}/../../../tooling/hardeningkitty"
 hardeningkitty_local_module_dir: "{{ hardeningkitty_local_root }}/module"
 hardeningkitty_local_lists_dir: "{{ hardeningkitty_local_root }}/lists"
 

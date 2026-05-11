@@ -1,0 +1,98 @@
+---
+- name: Load Windows inventory vars for runtime host creation
+  ansible.builtin.include_vars:
+    file: "{{ windows_runtime_resolver_inventory_vars_file }}"
+    name: windows_inventory_vars
+
+- name: Build Windows account candidate lists again
+  ansible.builtin.set_fact:
+    windows_runtime_hosts: "{{ query('inventory_hostnames', 'windows') }}"
+    windows_account_candidates:
+      - name: "{{ windows_inventory_vars.windows_default_admin_account_name }}"
+        password: "{{ windows_inventory_vars.windows_initial_admin_password }}"
+      - name: "{{ windows_inventory_vars.windows_identity_admin_target_name }}"
+        password: "{{ windows_inventory_vars.windows_identity_admin_password }}"
+    windows_account_candidate_prefixes: >-
+      {{
+        windows_inventory_vars.windows_account_candidate_prefixes
+        | default(windows_runtime_resolver_account_candidate_prefixes_default)
+      }}
+
+- name: Determine working Windows runtime account per host
+  ansible.builtin.set_fact:
+    windows_runtime_selected_user: >-
+      {%- set ns = namespace(username='') -%}
+      {%- for account in windows_account_candidates -%}
+        {%- for prefix in windows_account_candidate_prefixes -%}
+          {%- set alias = 'probe__' ~ item ~ '__' ~ (account.name | regex_replace('[^A-Za-z0-9]+', '_')) ~ '__' ~ (prefix | regex_replace('[^A-Za-z0-9]+', '_')) -%}
+          {%- if (hostvars[alias].windows_probe_success | default(false)) and (ns.username | length == 0) -%}
+            {%- set ns.username = prefix ~ account.name -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ ns.username }}
+    windows_runtime_selected_account_name: >-
+      {%- set ns = namespace(account='') -%}
+      {%- for account in windows_account_candidates -%}
+        {%- for prefix in windows_account_candidate_prefixes -%}
+          {%- set alias = 'probe__' ~ item ~ '__' ~ (account.name | regex_replace('[^A-Za-z0-9]+', '_')) ~ '__' ~ (prefix | regex_replace('[^A-Za-z0-9]+', '_')) -%}
+          {%- if (hostvars[alias].windows_probe_success | default(false)) and (ns.account | length == 0) -%}
+            {%- set ns.account = account.name -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ ns.account }}
+    windows_runtime_selected_password: >-
+      {%- set ns = namespace(password='') -%}
+      {%- for account in windows_account_candidates -%}
+        {%- for prefix in windows_account_candidate_prefixes -%}
+          {%- set alias = 'probe__' ~ item ~ '__' ~ (account.name | regex_replace('[^A-Za-z0-9]+', '_')) ~ '__' ~ (prefix | regex_replace('[^A-Za-z0-9]+', '_')) -%}
+          {%- if (hostvars[alias].windows_probe_success | default(false)) and (ns.password | length == 0) -%}
+            {%- set ns.password = account.password -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ ns.password }}
+  loop: "{{ windows_runtime_hosts }}"
+  register: windows_runtime_selection
+
+- name: Fail when no Windows runtime account matches a host
+  ansible.builtin.fail:
+    msg: >-
+      Could not resolve a working WinRM account for {{ item.item }}.
+      Tried prefixes {{ windows_account_candidate_prefixes | join(', ') }} with account names {{ windows_account_candidates | map(attribute='name') | join(', ') }}.
+  loop: "{{ windows_runtime_selection.results }}"
+  when: item.ansible_facts.windows_runtime_selected_user | trim | length == 0
+
+- name: Add runtime Windows hosts with resolved account context
+  ansible.builtin.add_host:
+    name: "{{ item.item }}"
+    groups: >-
+      {{
+        [windows_runtime_resolver_runtime_group]
+        + ([windows_runtime_resolver_runtime_dc_group] if item.item in (groups['domain_controllers'] | default([])) else [])
+        + ([windows_runtime_resolver_runtime_member_group] if item.item in (groups['member_servers'] | default([])) else [])
+      }}
+    ansible_host: "{{ hostvars[item.item].ansible_host }}"
+    ansible_connection: "{{ windows_inventory_vars.ansible_connection }}"
+    ansible_port: "{{ windows_inventory_vars.ansible_port }}"
+    ansible_winrm_transport: "{{ windows_inventory_vars.ansible_winrm_transport }}"
+    ansible_winrm_server_cert_validation: "{{ windows_inventory_vars.ansible_winrm_server_cert_validation }}"
+    ansible_winrm_operation_timeout_sec: "{{ windows_inventory_vars.ansible_winrm_operation_timeout_sec }}"
+    ansible_winrm_read_timeout_sec: "{{ windows_inventory_vars.ansible_winrm_read_timeout_sec }}"
+    ansible_user: "{{ item.ansible_facts.windows_runtime_selected_user }}"
+    ansible_password: "{{ item.ansible_facts.windows_runtime_selected_password }}"
+    windows_active_admin_account_name: "{{ item.ansible_facts.windows_runtime_selected_account_name }}"
+    windows_default_admin_account_name: "{{ windows_inventory_vars.windows_default_admin_account_name }}"
+    windows_default_guest_account_name: "{{ windows_inventory_vars.windows_default_guest_account_name }}"
+    windows_identity_admin_target_name: "{{ windows_inventory_vars.windows_identity_admin_target_name }}"
+    windows_identity_guest_target_name: "{{ windows_inventory_vars.windows_identity_guest_target_name }}"
+    windows_initial_admin_password: "{{ windows_inventory_vars.windows_initial_admin_password }}"
+    windows_identity_admin_password: "{{ windows_inventory_vars.windows_identity_admin_password }}"
+    hardeningkitty_profile: "{{ hostvars[item.item].hardeningkitty_profile | default('') }}"
+  loop: "{{ windows_runtime_selection.results }}"
+
+- name: Show resolved Windows runtime accounts
+  ansible.builtin.debug:
+    msg: "{{ item.item }} -> {{ item.ansible_facts.windows_runtime_selected_user }}"
+  loop: "{{ windows_runtime_selection.results }}"

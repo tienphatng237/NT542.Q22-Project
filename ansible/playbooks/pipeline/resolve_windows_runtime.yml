@@ -1,0 +1,24 @@
+---
+- name: Phase 0.5 - Resolve Windows runtime account
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - ansible.builtin.include_role:
+        name: windows_runtime_resolver
+        tasks_from: prepare_probe_hosts.yml
+
+- name: Probe Windows runtime accounts over WinRM
+  hosts: windows_account_probe
+  gather_facts: false
+  tasks:
+    - ansible.builtin.include_role:
+        name: windows_runtime_resolver
+        tasks_from: run_probe.yml
+
+- name: Build runtime Windows group for the pipeline
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - ansible.builtin.include_role:
+        name: windows_runtime_resolver
+        tasks_from: build_runtime_hosts.yml

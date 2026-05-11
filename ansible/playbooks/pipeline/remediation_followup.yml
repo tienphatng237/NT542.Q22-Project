@@ -1,0 +1,63 @@
+---
+- name: Phase 2-5 - Remediation, Post-Audit, Validation, and Report
+  hosts: windows_runtime
+  gather_facts: false
+  tasks:
+    - name: Announce remediation phase
+      ansible.builtin.debug:
+        msg: "Phase 2 - Remediation"
+
+    - ansible.builtin.include_role:
+        name: identity_access_control
+        tasks_from: remediation.yml
+    - ansible.builtin.include_role:
+        name: network_services_security
+        tasks_from: remediation.yml
+    - ansible.builtin.include_role:
+        name: auditing_monitoring
+        tasks_from: remediation.yml
+    - ansible.builtin.include_role:
+        name: system_hardening_antimalware
+        tasks_from: remediation.yml
+
+    - name: Announce post-audit phase
+      ansible.builtin.debug:
+        msg: "Phase 3 - Post-Audit"
+
+    - ansible.builtin.include_role:
+        name: identity_access_control
+        tasks_from: post_audit.yml
+    - ansible.builtin.include_role:
+        name: network_services_security
+        tasks_from: post_audit.yml
+    - ansible.builtin.include_role:
+        name: auditing_monitoring
+        tasks_from: post_audit.yml
+    - ansible.builtin.include_role:
+        name: system_hardening_antimalware
+        tasks_from: post_audit.yml
+
+    - name: Announce validation phase
+      ansible.builtin.debug:
+        msg: "Phase 4 - External Validation"
+
+    - ansible.builtin.include_role:
+        name: hardeningkitty_validation
+        tasks_from: validate.yml
+
+    - name: Announce report collection phase
+      ansible.builtin.debug:
+        msg: "Phase 5 - Report Collection"
+
+    - ansible.builtin.include_role:
+        name: identity_access_control
+        tasks_from: report.yml
+    - ansible.builtin.include_role:
+        name: network_services_security
+        tasks_from: report.yml
+    - ansible.builtin.include_role:
+        name: auditing_monitoring
+        tasks_from: report.yml
+    - ansible.builtin.include_role:
+        name: system_hardening_antimalware
+        tasks_from: report.yml

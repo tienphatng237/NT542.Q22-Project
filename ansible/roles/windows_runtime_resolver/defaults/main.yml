@@ -1,0 +1,16 @@
+---
+windows_runtime_resolver_inventory_vars_file: >-
+  {{
+    ((inventory_dir | default('', true)) ~ '/group_vars/windows.yml')
+    if (inventory_dir is defined and (inventory_dir | length > 0))
+    else (playbook_dir ~ '/../../inventories/vm/group_vars/windows.yml')
+  }}
+windows_runtime_resolver_probe_group: windows_account_probe
+windows_runtime_resolver_runtime_group: windows_runtime
+windows_runtime_resolver_runtime_dc_group: domain_controllers_runtime
+windows_runtime_resolver_runtime_member_group: member_servers_runtime
+windows_runtime_resolver_account_candidate_prefixes_default:
+  - '.\'
+  - ''
+  - 'group7.local\'
+  - 'group7\'

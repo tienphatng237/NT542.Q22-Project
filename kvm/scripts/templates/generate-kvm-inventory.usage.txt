@@ -1,0 +1,13 @@
+Usage:
+  ./kvm/scripts/generate-kvm-inventory.sh
+
+Optional environment variables:
+  LIBVIRT_URI                     (default: qemu:///system)
+  DC_DOMAIN_NAME                  (default: dc01)
+  MEMBER_DOMAIN_NAME              (default: member01)
+  OUTPUT_PATH                     (default: ansible/inventories/kvm/windows_server.ini)
+  ANSIBLE_WIN_USER                (default: Administrator)
+  ANSIBLE_WIN_PASSWORD            (default: empty placeholder)
+  ANSIBLE_WINRM_PORT              (default: 5985)
+  ANSIBLE_WINRM_TRANSPORT         (default: ntlm)
+  ANSIBLE_WINRM_CERT_VALIDATION   (default: ignore)

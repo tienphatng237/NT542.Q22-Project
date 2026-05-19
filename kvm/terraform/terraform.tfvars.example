@@ -1,0 +1,50 @@
+libvirt_uri        = "qemu:///system"
+pool_name          = "default"
+golden_image_path  = "../iso/win2k22-golden.qcow2"
+golden_volume_name = "win2k22-golden-base.qcow2"
+
+network = {
+  name      = "windows-lab-net"
+  mode      = "nat"
+  cidr      = "192.168.201.0/24"
+  autostart = true
+}
+
+domain_controller = {
+  name           = "dc01"
+  vcpu           = 2
+  memory_mb      = 4096
+  disk_size_gb   = 80
+  mac_address    = "52:54:00:42:10:10"
+  ip_addresses   = ["192.168.201.10"]
+  machine_type   = "pc-q35-10.0"
+  disk_scsi      = false
+  wait_for_lease = false
+  autostart      = true
+}
+
+member_server = {
+  name           = "member01"
+  vcpu           = 2
+  memory_mb      = 4096
+  disk_size_gb   = 80
+  mac_address    = "52:54:00:42:10:20"
+  ip_addresses   = ["192.168.201.20"]
+  machine_type   = "pc-q35-10.0"
+  disk_scsi      = false
+  wait_for_lease = false
+  autostart      = true
+}
+
+file_server = {
+  name           = "fs01"
+  vcpu           = 2
+  memory_mb      = 4096
+  disk_size_gb   = 80
+  mac_address    = "52:54:00:42:10:30"
+  ip_addresses   = ["192.168.201.30"]
+  machine_type   = "pc-q35-10.0"
+  disk_scsi      = false
+  wait_for_lease = false
+  autostart      = true
+}

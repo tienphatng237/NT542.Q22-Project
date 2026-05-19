@@ -1,6 +1,8 @@
 ---
+- import_playbook: ../pipeline/resolve_windows_runtime.yml
+
 - name: Phase 0 - Windows Management Bootstrap
-  hosts: windows
+  hosts: windows_runtime
   gather_facts: false
   tasks:
     - ansible.builtin.include_role:

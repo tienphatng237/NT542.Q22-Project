@@ -6,30 +6,54 @@
   become: false
   register: wazuh_manager_script_stat
 
-- name: Ensure Wazuh manager install script is present
-  ansible.builtin.assert:
-    that:
-      - wazuh_manager_script_stat.stat.exists
-    fail_msg: "Missing local installer script: {{ wazuh_manager_local_install_script }}"
-
 - name: Check whether Wazuh manager is already installed
   ansible.builtin.stat:
     path: "{{ wazuh_manager_install_marker }}"
   register: wazuh_manager_marker
 
-- name: Copy Wazuh manager install script to Linux host
+- name: Copy local Wazuh manager install script to Linux host
   ansible.builtin.copy:
     src: "{{ wazuh_manager_local_install_script }}"
     dest: "{{ wazuh_manager_remote_install_script }}"
     mode: "0755"
-  when: not wazuh_manager_marker.stat.exists
+  when:
+    - wazuh_manager_script_stat.stat.exists
+    - not wazuh_manager_marker.stat.exists
 
-- name: Install Wazuh manager stack
+- name: Ensure curl is installed when using online Wazuh installer
+  ansible.builtin.package:
+    name: curl
+    state: present
+  when:
+    - not wazuh_manager_script_stat.stat.exists
+    - not wazuh_manager_marker.stat.exists
+
+- name: Download Wazuh installation assistant when local script is missing
+  ansible.builtin.get_url:
+    url: "{{ wazuh_manager_install_script_url }}"
+    dest: "{{ wazuh_manager_remote_install_script }}"
+    mode: "0755"
+  when:
+    - not wazuh_manager_script_stat.stat.exists
+    - not wazuh_manager_marker.stat.exists
+
+- name: Install Wazuh manager stack from local script
   ansible.builtin.command:
     cmd: "{{ wazuh_manager_remote_install_script }}"
   environment: "{{ wazuh_manager_install_env }}"
   register: wazuh_manager_install
-  when: not wazuh_manager_marker.stat.exists
+  when:
+    - wazuh_manager_script_stat.stat.exists
+    - not wazuh_manager_marker.stat.exists
+
+- name: Install Wazuh manager stack from official installation assistant
+  ansible.builtin.command:
+    cmd: "{{ wazuh_manager_remote_install_script }} {{ wazuh_manager_install_args }}"
+  environment: "{{ wazuh_manager_install_env }}"
+  register: wazuh_manager_install
+  when:
+    - not wazuh_manager_script_stat.stat.exists
+    - not wazuh_manager_marker.stat.exists
 
 - name: Refresh Wazuh manager install marker after installation
   ansible.builtin.stat:

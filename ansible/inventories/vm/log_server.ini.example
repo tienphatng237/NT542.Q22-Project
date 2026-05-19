@@ -1,0 +1,2 @@
+[log_servers]
+log01 ansible_host=192.168.250.40 ansible_user=ubuntu

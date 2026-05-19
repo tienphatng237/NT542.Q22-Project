@@ -1,12 +1,14 @@
 [windows]
 dc01 ansible_host=192.168.250.10 hardeningkitty_profile=dc
 member01 ansible_host=192.168.250.20 hardeningkitty_profile=member
-
-[log_servers]
-log01 ansible_host=192.168.250.30 ansible_user=ubuntu
+fs01 ansible_host=192.168.250.30 hardeningkitty_profile=member
 
 [domain_controllers]
 dc01
 
 [member_servers]
 member01
+fs01
+
+[file_servers]
+fs01

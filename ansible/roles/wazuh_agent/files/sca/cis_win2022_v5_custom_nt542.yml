@@ -1,0 +1,154 @@
+policy:
+  id: "cis_win2022_v5_custom_nt542"
+  file: "cis_win2022_v5_custom_nt542.yml"
+  name: "CIS Microsoft Windows Server 2022 v5.0.0 - NT542 Custom Baseline"
+  description: "Custom SCA policy aligned with NT542 project hardening scripts for Windows Server 2022."
+  references:
+    - "https://www.cisecurity.org/benchmark/microsoft_windows_server"
+
+checks:
+  - id: 850001
+    title: "2.3.8.1 Microsoft network client: Digitally sign communications (always)"
+    description: "Require SMB signing on LanmanWorkstation."
+    rationale: "Helps prevent SMB tampering and relay scenarios."
+    remediation: "Set RequireSecuritySignature=1 under LanmanWorkstation parameters."
+    compliance:
+      - cis: ["2.3.8.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanWorkstation\Parameters'
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanWorkstation\Parameters -> RequireSecuritySignature'
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanWorkstation\Parameters -> RequireSecuritySignature -> 1'
+
+  - id: 850002
+    title: "2.3.8.2 Microsoft network client: Send unencrypted password to third-party SMB servers"
+    description: "Disallow plaintext password fallback for SMB client."
+    compliance:
+      - cis: ["2.3.8.2"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanWorkstation\Parameters -> EnablePlainTextPassword -> 0'
+
+  - id: 850003
+    title: "2.3.9.1 Microsoft network server: Amount of idle time required before suspending session"
+    description: "Set SMB autodisconnect to 15 minutes."
+    compliance:
+      - cis: ["2.3.9.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanManServer\Parameters -> autodisconnect -> 15'
+
+  - id: 850004
+    title: "2.3.10.5 Network access: Let Everyone permissions apply to anonymous users"
+    description: "Ensure anonymous users are not included in Everyone group permissions."
+    compliance:
+      - cis: ["2.3.10.5"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Lsa -> EveryoneIncludesAnonymous -> 0'
+
+  - id: 850005
+    title: "2.3.17.5 UAC: Only elevate UIAccess applications in secure locations"
+    description: "Require secure paths for UIAccess elevation."
+    compliance:
+      - cis: ["2.3.17.5"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -> EnableSecureUIAPaths -> 1'
+
+  - id: 850006
+    title: "9.1.1 Domain Profile: Windows Firewall state"
+    description: "Domain profile firewall must be enabled."
+    compliance:
+      - cis: ["9.1.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile -> EnableFirewall -> 1'
+
+  - id: 850007
+    title: "9.1.2 Domain Profile: Inbound connections"
+    description: "Domain profile inbound policy should block by default."
+    compliance:
+      - cis: ["9.1.2"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile -> DefaultInboundAction -> 1'
+
+  - id: 850008
+    title: "9.3.1 Public Profile: Windows Firewall state"
+    description: "Public profile firewall must be enabled."
+    compliance:
+      - cis: ["9.3.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\WindowsFirewall\PublicProfile -> EnableFirewall -> 1'
+
+  - id: 850009
+    title: "18.6.4.1 Configure DNS over HTTPS (DoH) name resolution"
+    description: "mDNS should be disabled on servers in this baseline."
+    compliance:
+      - cis: ["18.6.4.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient -> EnableMDNS -> 0'
+
+  - id: 850010
+    title: "5.1 Print Spooler service"
+    description: "Print Spooler service startup type should be disabled for this hardening profile."
+    compliance:
+      - cis: ["5.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Spooler -> Start -> 4'
+
+  - id: 850011
+    title: "18.10.42.4.1 Microsoft Defender: Enable EDR in block mode"
+    description: "PassiveRemediation must be enabled."
+    compliance:
+      - cis: ["18.10.42.4.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Features -> PassiveRemediation -> 1'
+
+  - id: 850012
+    title: "18.10.42.5.1 Microsoft Defender: Configure local MAPS reporting override"
+    description: "Local MAPS override must be disabled."
+    compliance:
+      - cis: ["18.10.42.5.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet -> LocalSettingOverrideSpynetReporting -> 0'
+
+  - id: 850013
+    title: "18.10.42.12.1 Microsoft Defender: Configure Watson events"
+    description: "Watson events reporting should be disabled in this baseline."
+    compliance:
+      - cis: ["18.10.42.12.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Reporting -> DisableGenericRePorts -> 1'
+
+  - id: 850014
+    title: "18.9.4.1 Credentials Delegation: Encryption Oracle Remediation"
+    description: "Require Force Updated Clients mode."
+    compliance:
+      - cis: ["18.9.4.1"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP\Parameters -> AllowEncryptionOracle -> 0'
+
+  - id: 850015
+    title: "2.3.2.2 Audit: Shut down system immediately if unable to log security audits"
+    description: "CrashOnAuditFail should be disabled in this profile."
+    compliance:
+      - cis: ["2.3.2.2"]
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa -> CrashOnAuditFail -> 0'
+
+  - id: 850016
+    title: "Wazuh Agent service running"
+    description: "Ensure the Wazuh agent process is active."
+    condition: all
+    rules:
+      - 'p:WazuhSvc'

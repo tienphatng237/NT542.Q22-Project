@@ -88,37 +88,105 @@
     arguments: "{{ wazuh_agent_package_arguments | regex_replace('\\s+', ' ') | trim }}"
     state: present
 
+- name: Ensure Wazuh custom SCA policy directory exists
+  ansible.windows.win_file:
+    path: "{{ wazuh_agent_custom_sca_policy_remote_dir }}"
+    state: directory
+  when: wazuh_agent_custom_sca_policy_enabled | bool
+
+- name: Deploy custom CIS v5.0.0 SCA policy to Windows agent
+  ansible.windows.win_copy:
+    src: "{{ wazuh_agent_custom_sca_policy_local_src }}"
+    dest: "{{ wazuh_agent_custom_sca_policy_remote_path }}"
+  register: wazuh_agent_custom_sca_policy_copy
+  when: wazuh_agent_custom_sca_policy_enabled | bool
+
 - name: Ensure Wazuh agent service is started
   ansible.windows.win_service:
     name: "{{ wazuh_agent_service_name }}"
     start_mode: auto
     state: started
 
-- name: Configure Wazuh SCA interval
+- name: Configure Wazuh SCA settings and custom policy binding
   ansible.windows.win_shell: |
     $configPath = "{{ wazuh_agent_install_dir }}\ossec.conf"
+    $targetInterval = "{{ wazuh_agent_sca_interval }}"
+    $targetPolicyPath = "{{ wazuh_agent_custom_sca_policy_remote_path }}"
+
     [xml]$configXml = Get-Content -Path $configPath
     $scaNode = $configXml.ossec_config.sca
     if (-not $scaNode) {
       throw "Unable to find <sca> section in $configPath"
     }
-    $currentInterval = [string]$scaNode.interval
-    $targetInterval = "{{ wazuh_agent_sca_interval }}"
-    if ($currentInterval -ne $targetInterval) {
-      $scaNode.interval = $targetInterval
-      $configXml.Save($configPath)
-      Write-Output "CHANGED:$currentInterval->$targetInterval"
-    } else {
-      Write-Output "UNCHANGED:$currentInterval"
-    }
-  register: wazuh_agent_sca_interval_result
-  changed_when: "'CHANGED:' in wazuh_agent_sca_interval_result.stdout"
 
-- name: Restart Wazuh agent service after SCA interval change
+    $changed = $false
+
+    $currentInterval = [string]$scaNode.interval
+    if ($currentInterval -ne $targetInterval) {
+      if ($scaNode.interval) {
+        $scaNode.interval = $targetInterval
+      } else {
+        $intervalNode = $configXml.CreateElement('interval')
+        $intervalNode.InnerText = $targetInterval
+        [void]$scaNode.AppendChild($intervalNode)
+      }
+      $changed = $true
+    }
+
+    if (-not $scaNode.scan_on_start) {
+      $scanOnStartNode = $configXml.CreateElement('scan_on_start')
+      $scanOnStartNode.InnerText = 'yes'
+      [void]$scaNode.AppendChild($scanOnStartNode)
+      $changed = $true
+    } elseif ([string]$scaNode.scan_on_start -ne 'yes') {
+      $scaNode.scan_on_start = 'yes'
+      $changed = $true
+    }
+
+    if ({{ '1' if wazuh_agent_custom_sca_policy_enabled | bool else '0' }} -eq 1) {
+      $policiesNode = $scaNode.policies
+      if (-not $policiesNode) {
+        $policiesNode = $configXml.CreateElement('policies')
+        [void]$scaNode.AppendChild($policiesNode)
+        $changed = $true
+      }
+
+      $existingPolicy = @($policiesNode.policy | Where-Object {
+        ([string]$_.InnerText).Trim().ToLowerInvariant() -eq $targetPolicyPath.ToLowerInvariant()
+      })
+
+      if ($existingPolicy.Count -eq 0) {
+        $policyNode = $configXml.CreateElement('policy')
+        [void]$policyNode.SetAttribute('enabled', 'yes')
+        $policyNode.InnerText = $targetPolicyPath
+        [void]$policiesNode.AppendChild($policyNode)
+        $changed = $true
+      } else {
+        foreach ($policyNode in $existingPolicy) {
+          if ([string]$policyNode.enabled -ne 'yes') {
+            [void]$policyNode.SetAttribute('enabled', 'yes')
+            $changed = $true
+          }
+        }
+      }
+    }
+
+    if ($changed) {
+      $configXml.Save($configPath)
+      Write-Output "CHANGED"
+    } else {
+      Write-Output "UNCHANGED"
+    }
+  register: wazuh_agent_sca_config_result
+  changed_when: "'CHANGED' in wazuh_agent_sca_config_result.stdout"
+
+- name: Restart Wazuh agent service after SCA updates
   ansible.windows.win_service:
     name: "{{ wazuh_agent_service_name }}"
     state: restarted
-  when: wazuh_agent_sca_interval_result.changed
+  when: >-
+    wazuh_agent_sca_config_result.changed
+    or (wazuh_agent_custom_sca_policy_copy is defined and wazuh_agent_custom_sca_policy_copy.changed)
 
 - name: Wait until manager registers the agent
   ansible.builtin.shell: >-
@@ -142,4 +210,6 @@
       - "Manager target: {{ wazuh_manager_address }}"
       - "Manager already knows agent: {{ wazuh_agent_registered_on_manager }}"
       - "Re-enrollment required: {{ wazuh_agent_reenroll_required }}"
-      - "Verify enrollment in the Wazuh dashboard after the service starts."
+      - "Custom SCA policy: {{ wazuh_agent_custom_sca_policy_remote_path if wazuh_agent_custom_sca_policy_enabled | bool else 'disabled' }}"
+      - "SCA scan interval: {{ wazuh_agent_sca_interval }}"
+      - "Verify SCA results in Wazuh dashboard after next scan cycle."

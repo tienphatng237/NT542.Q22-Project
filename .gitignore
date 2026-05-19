@@ -5,6 +5,8 @@ documents/
 
 # Local secret inventory vars (do not commit credentials)
 ansible/inventories/**/group_vars/windows.yml
+ansible/inventories/vm/*.ini
+!ansible/inventories/vm/*.ini.example
 
 # Tooling artifacts (large): ignore all by default, keep placeholder
 tooling/*
@@ -21,3 +23,22 @@ tooling/hardeningkitty/lists/*
 # Ignore heavy HardeningKitty sources/modules
 tooling/hardeningkitty/source/
 tooling/hardeningkitty/module/
+
+# KVM artifacts
+kvm/iso/*
+!kvm/iso/.gitkeep
+
+# Terraform local/state artifacts in kvm stacks
+kvm/terraform/**/.terraform/
+kvm/terraform/**/.terraform.lock.hcl
+kvm/terraform/**/terraform.tfvars
+kvm/terraform/**/terraform.tfstate
+kvm/terraform/**/terraform.tfstate.backup
+kvm/terraform/**/*.tfstate
+kvm/terraform/**/*.tfstate.*
+kvm/terraform/**/crash.log
+kvm/terraform/**/crash.*.log
+
+# Local private keys for KVM linux stack
+kvm/terraform/linux/key_pair/*
+!kvm/terraform/linux/key_pair/.gitkeep

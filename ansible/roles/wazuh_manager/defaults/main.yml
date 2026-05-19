@@ -1,11 +1,12 @@
 wazuh_manager_local_install_script: "{{ inventory_dir }}/../../../scripts/install-wazuh-manager.sh"
-wazuh_manager_remote_install_script: "/tmp/install-wazuh-manager.sh"
+wazuh_manager_install_script_url: "https://packages.wazuh.com/4.14/wazuh-install.sh"
+wazuh_manager_remote_install_script: "/tmp/wazuh-install.sh"
 wazuh_manager_install_log: "/tmp/wazuh-install.log"
 wazuh_manager_install_marker: "/var/ossec/bin/wazuh-control"
 wazuh_manager_overwrite_partial_install: true
+wazuh_manager_install_args: "{{ '-a -o' if wazuh_manager_overwrite_partial_install | bool else '-a' }}"
 wazuh_manager_install_env:
   WAZUH_VERSION: "4.14"
-  WAZUH_INSTALL_ARGS: "{{ '-a -o' if wazuh_manager_overwrite_partial_install | bool else '-a' }}"
 
 wazuh_manager_agent_groups: []
 

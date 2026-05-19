@@ -1,0 +1,20 @@
+vm_user        = "ubuntu"
+ssh_public_key = "../key_pair/lab-key.pub"
+base_image     = "../../../iso/ubuntu-22.04.qcow2"
+base_pool      = "kvm"
+storage_pool   = "kvm"
+cloudinit_pool = "kvm"
+
+# Attach the Linux log server to the same libvirt network used by the
+# Windows CIS lab so dc01/member01 can reach it directly.
+network_name = "windows-lab-net"
+
+nodes = {
+  log01 = {
+    memory   = 8192
+    vcpu     = 4
+    ip       = "192.168.250.40"
+    hostname = "log01"
+    disk_gb  = 40
+  }
+}

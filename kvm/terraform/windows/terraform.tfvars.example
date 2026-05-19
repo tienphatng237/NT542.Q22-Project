@@ -1,6 +1,6 @@
 libvirt_uri        = "qemu:///system"
 pool_name          = "default"
-golden_image_path  = "../iso/win2k22-golden.qcow2"
+golden_image_path  = "../../iso/win2k22-golden.qcow2"
 golden_volume_name = "win2k22-golden-base.qcow2"
 
 network = {

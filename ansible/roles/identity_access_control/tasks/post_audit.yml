@@ -21,6 +21,18 @@
     state: directory
   when: role_script_stat.stat.exists
 
+- name: Ensure remote common context directory exists
+  ansible.windows.win_file:
+    path: "{{ pipeline_remote_common_root }}"
+    state: directory
+  when: role_script_stat.stat.exists
+
+- name: Copy shared pipeline common scripts to Windows host
+  ansible.windows.win_copy:
+    src: "{{ pipeline_local_root }}/common/"
+    dest: "{{ pipeline_remote_common_root }}\\"
+  when: role_script_stat.stat.exists
+
 - name: Ensure remote template directory exists
   ansible.windows.win_file:
     path: "{{ pipeline_remote_templates_root | default(pipeline_remote_root ~ '\\templates') }}"

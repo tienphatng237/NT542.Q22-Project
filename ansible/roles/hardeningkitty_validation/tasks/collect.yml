@@ -1,0 +1,19 @@
+---
+- name: Ensure local HardeningKitty report directory exists
+  ansible.builtin.file:
+    path: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+
+- name: Fetch HardeningKitty CSV report
+  ansible.builtin.fetch:
+    src: "{{ hardeningkitty_remote_report_file }}"
+    dest: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/"
+    flat: true
+
+- name: Fetch HardeningKitty log file
+  ansible.builtin.fetch:
+    src: "{{ hardeningkitty_remote_log_file }}"
+    dest: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/"
+    flat: true

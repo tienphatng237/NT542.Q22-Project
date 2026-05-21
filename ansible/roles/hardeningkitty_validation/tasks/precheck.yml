@@ -1,0 +1,73 @@
+---
+- name: Resolve HardeningKitty finding list path
+  ansible.builtin.set_fact:
+    hardeningkitty_local_finding_list_path: >-
+      {{ hardeningkitty_local_lists_dir }}/{{ hardeningkitty_finding_list }}
+    hardeningkitty_finding_list_exists: false
+    hardeningkitty_validation_ready: false
+
+- name: Check HardeningKitty module manifest exists locally
+  ansible.builtin.stat:
+    path: "{{ hardeningkitty_local_module_manifest }}"
+  delegate_to: localhost
+  register: hardeningkitty_module_manifest_stat
+
+- name: Check HardeningKitty module script exists locally
+  ansible.builtin.stat:
+    path: "{{ hardeningkitty_local_module_script }}"
+  delegate_to: localhost
+  register: hardeningkitty_module_script_stat
+
+- name: Check HardeningKitty finding list exists locally
+  ansible.builtin.stat:
+    path: "{{ hardeningkitty_local_finding_list_path }}"
+  delegate_to: localhost
+  register: hardeningkitty_finding_list_stat
+  when: hardeningkitty_finding_list | length > 0
+
+- name: Record HardeningKitty finding list existence
+  ansible.builtin.set_fact:
+    hardeningkitty_finding_list_exists: "{{ hardeningkitty_finding_list_stat.stat.exists | default(false) }}"
+  when: hardeningkitty_finding_list | length > 0
+
+- name: Skip HardeningKitty validation when role is disabled
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: hardeningkitty_enabled=false"
+  when: not hardeningkitty_enabled | bool
+
+- name: Skip HardeningKitty validation when module payload is missing
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: add module files under {{ hardeningkitty_local_module_dir }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - not hardeningkitty_module_manifest_stat.stat.exists or not hardeningkitty_module_script_stat.stat.exists
+
+- name: Skip HardeningKitty validation when finding list is not configured
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: configure hardeningkitty_finding_list_by_host for {{ inventory_hostname }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length == 0
+
+- name: Skip HardeningKitty validation when finding list file is missing
+  ansible.builtin.debug:
+    msg: "Skip HardeningKitty validation: missing {{ hardeningkitty_local_finding_list_path }}"
+  when:
+    - hardeningkitty_enabled | bool
+    - hardeningkitty_module_manifest_stat.stat.exists
+    - hardeningkitty_module_script_stat.stat.exists
+    - hardeningkitty_finding_list | length > 0
+    - not hardeningkitty_finding_list_exists | bool
+
+- name: Mark HardeningKitty validation ready state
+  ansible.builtin.set_fact:
+    hardeningkitty_validation_ready: >-
+      {{
+        (hardeningkitty_enabled | bool)
+        and (hardeningkitty_module_manifest_stat.stat.exists | default(false))
+        and (hardeningkitty_module_script_stat.stat.exists | default(false))
+        and (hardeningkitty_finding_list | length > 0)
+        and (hardeningkitty_finding_list_exists | bool)
+      }}

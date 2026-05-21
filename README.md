@@ -127,14 +127,31 @@ ansible-playbook -i inventories/vm/log_server.ini -i inventories/vm/windows.ini 
 - password: `AdminWazuh9*`
 
 ### 4.2 HardeningKitty
-Để tránh commit module lớn, tải tự động từ upstream trước khi chạy pipeline:
+HardeningKitty trong pipeline cần 2 thành phần local:
+- `module/`: engine thực thi (`HardeningKitty.psd1`, `HardeningKitty.psm1`)
+- `lists/`: baseline/finding list để chấm điểm theo vai trò máy chủ (DC/Member)
+
+Để chạy từ đầu, thực hiện bootstrap như sau:
 
 ```bash
-mkdir -p tooling/hardeningkitty/module
+mkdir -p tooling/hardeningkitty/module tooling/hardeningkitty/lists
+
+# 1) Tải engine HardeningKitty từ upstream
 curl -fsSL -o tooling/hardeningkitty/module/HardeningKitty.psd1 \
   https://raw.githubusercontent.com/0x6d69636b/windows_hardening/master/HardeningKitty.psd1
 curl -fsSL -o tooling/hardeningkitty/module/HardeningKitty.psm1 \
   https://raw.githubusercontent.com/0x6d69636b/windows_hardening/master/HardeningKitty.psm1
+
+# 2) Tải 2 finding list mặc định đang dùng trong đồ án
+#    (mapping tại ansible/inventories/vm/group_vars/all.yml)
+curl -fsSL -o tooling/hardeningkitty/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_dc_machine.csv \
+  https://raw.githubusercontent.com/0x6d69636b/windows_hardening/master/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_dc_machine.csv
+curl -fsSL -o tooling/hardeningkitty/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_member_machine.csv \
+  https://raw.githubusercontent.com/0x6d69636b/windows_hardening/master/lists/finding_list_msft_security_baseline_windows_server_2022_21h2_member_machine.csv
+
+# 3) Kiểm tra nhanh trước khi chạy pipeline
+ls -la tooling/hardeningkitty/module
+ls -la tooling/hardeningkitty/lists | grep -E "windows_server_2022_21h2_(dc|member)_machine"
 ```
 
 ## 5. Triển khai quy trình benchmark

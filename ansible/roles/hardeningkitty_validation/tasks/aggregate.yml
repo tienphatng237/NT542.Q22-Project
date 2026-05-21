@@ -1,0 +1,46 @@
+---
+- name: Ensure local aggregate HardeningKitty report directory exists
+  ansible.builtin.file:
+    path: "{{ hardeningkitty_local_aggregate_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  run_once: true
+  when: hardeningkitty_enabled | bool
+
+- name: Build HardeningKitty aggregate rows
+  ansible.builtin.set_fact:
+    hardeningkitty_aggregate_rows: "{{ (hardeningkitty_aggregate_rows | default([])) + [ {'host': item, 'finding_list': hostvars[item].hardeningkitty_finding_list | default(''), 'score': hostvars[item].hardeningkitty_score | default('0'), 'total_checks': hostvars[item].hardeningkitty_total_checks | default(0), 'passed': hostvars[item].hardeningkitty_passed | default(0), 'low': hostvars[item].hardeningkitty_low | default(0), 'medium': hostvars[item].hardeningkitty_medium | default(0), 'high': hostvars[item].hardeningkitty_high | default(0)} ] }}"
+  loop: "{{ ansible_play_hosts_all }}"
+  run_once: true
+  delegate_to: localhost
+  when:
+    - hardeningkitty_enabled | bool
+    - hostvars[item].hardeningkitty_summary_line is defined
+    - (hostvars[item].hardeningkitty_summary_line | length) > 0
+
+- name: Write HardeningKitty aggregate CSV summary
+  ansible.builtin.copy:
+    dest: "{{ hardeningkitty_local_aggregate_csv }}"
+    mode: "0644"
+    content: |-
+      host,finding_list,score,total_checks,passed,low,medium,high
+      {% for row in hardeningkitty_aggregate_rows | default([]) %}
+      {{ row.host }},{{ row.finding_list }},{{ row.score }},{{ row.total_checks }},{{ row.passed }},{{ row.low }},{{ row.medium }},{{ row.high }}
+      {% endfor %}
+  delegate_to: localhost
+  run_once: true
+  when:
+    - hardeningkitty_enabled | bool
+    - (hardeningkitty_aggregate_rows | default([]) | length) > 0
+
+- name: Write HardeningKitty aggregate JSON summary
+  ansible.builtin.copy:
+    dest: "{{ hardeningkitty_local_aggregate_json }}"
+    mode: "0644"
+    content: "{{ hardeningkitty_aggregate_rows | default([]) | to_json }}"
+  delegate_to: localhost
+  run_once: true
+  when:
+    - hardeningkitty_enabled | bool
+    - (hardeningkitty_aggregate_rows | default([]) | length) > 0

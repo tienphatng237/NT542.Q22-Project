@@ -1,0 +1,38 @@
+---
+- name: Ensure remote HardeningKitty directories exist
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ hardeningkitty_remote_root }}"
+    - "{{ hardeningkitty_remote_module_dir }}"
+    - "{{ hardeningkitty_remote_lists_dir }}"
+    - "{{ hardeningkitty_remote_output_dir }}"
+
+- name: Copy HardeningKitty module files to Windows host
+  ansible.windows.win_copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - src: "{{ hardeningkitty_local_module_manifest }}"
+      dest: "{{ hardeningkitty_remote_module_manifest }}"
+    - src: "{{ hardeningkitty_local_module_script }}"
+      dest: "{{ hardeningkitty_remote_module_script }}"
+    - src: "{{ hardeningkitty_local_finding_list_path }}"
+      dest: "{{ hardeningkitty_remote_lists_dir }}\\{{ hardeningkitty_finding_list }}"
+
+- name: Execute HardeningKitty audit
+  ansible.windows.win_shell: |
+    Import-Module "{{ hardeningkitty_remote_module_script }}"
+    Invoke-HardeningKitty `
+      -Mode Audit `
+      -Report `
+      -Log `
+      -ReportFile "{{ hardeningkitty_remote_report_file }}" `
+      -LogFile "{{ hardeningkitty_remote_log_file }}" `
+      -FileFindingList "{{ hardeningkitty_remote_lists_dir }}\{{ hardeningkitty_finding_list }}"
+  register: hardeningkitty_exec
+
+- name: Show HardeningKitty output
+  ansible.builtin.debug:
+    var: hardeningkitty_exec.stdout_lines

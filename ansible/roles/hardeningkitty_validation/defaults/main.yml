@@ -10,3 +10,7 @@ hardeningkitty_remote_report_file: "{{ hardeningkitty_remote_output_dir }}\\{{ h
 hardeningkitty_remote_log_file: "{{ hardeningkitty_remote_output_dir }}\\{{ hardeningkitty_report_basename }}.log"
 hardeningkitty_local_summary_txt: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/{{ hardeningkitty_report_basename }}-summary.txt"
 hardeningkitty_local_summary_csv: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/{{ hardeningkitty_report_basename }}-summary.csv"
+hardeningkitty_local_summary_json: "{{ pipeline_local_reports_root }}/{{ inventory_hostname }}/{{ role_slug }}/{{ hardeningkitty_report_basename }}-summary.json"
+hardeningkitty_local_aggregate_dir: "{{ pipeline_local_reports_root }}/hardeningkitty-validation"
+hardeningkitty_local_aggregate_csv: "{{ hardeningkitty_local_aggregate_dir }}/hardeningkitty-summary-all-hosts.csv"
+hardeningkitty_local_aggregate_json: "{{ hardeningkitty_local_aggregate_dir }}/hardeningkitty-summary-all-hosts.json"

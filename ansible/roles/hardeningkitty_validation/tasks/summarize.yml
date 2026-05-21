@@ -1,0 +1,63 @@
+---
+- name: Extract HardeningKitty summary line
+  ansible.builtin.set_fact:
+    hardeningkitty_summary_line: >-
+      {{
+        (
+          hardeningkitty_exec.stdout_lines
+          | select('search', 'Your HardeningKitty score is:')
+          | list
+          | first
+          | default('')
+        ) | trim
+      }}
+
+- name: Write HardeningKitty text summary
+  ansible.builtin.copy:
+    dest: "{{ hardeningkitty_local_summary_txt }}"
+    mode: "0644"
+    content: |
+      Host: {{ inventory_hostname }}
+      Finding List: {{ hardeningkitty_finding_list }}
+      Summary: {{ hardeningkitty_summary_line | regex_replace('^\[\*\]\s*', '') }}
+  delegate_to: localhost
+  when: hardeningkitty_summary_line | length > 0
+
+- name: Parse HardeningKitty metrics
+  ansible.builtin.set_fact:
+    hardeningkitty_score: "{{ hardeningkitty_summary_line | regex_findall('score is: ([0-9.]+)') | first | default('0') }}"
+    hardeningkitty_total_checks: "{{ (hardeningkitty_summary_line | regex_findall('Total checks: ([0-9]+)') | first | default('0')) | int }}"
+    hardeningkitty_passed: "{{ (hardeningkitty_summary_line | regex_findall('Passed: ([0-9]+)') | first | default('0')) | int }}"
+    hardeningkitty_low: "{{ (hardeningkitty_summary_line | regex_findall('Low: ([0-9]+)') | first | default('0')) | int }}"
+    hardeningkitty_medium: "{{ (hardeningkitty_summary_line | regex_findall('Medium: ([0-9]+)') | first | default('0')) | int }}"
+    hardeningkitty_high: "{{ (hardeningkitty_summary_line | regex_findall('High: ([0-9]+)') | first | default('0')) | int }}"
+  when: hardeningkitty_summary_line | length > 0
+
+- name: Write HardeningKitty CSV summary
+  ansible.builtin.copy:
+    dest: "{{ hardeningkitty_local_summary_csv }}"
+    mode: "0644"
+    content: |-
+      host,finding_list,score,total_checks,passed,low,medium,high
+      {{ inventory_hostname }},{{ hardeningkitty_finding_list }},{{ hardeningkitty_score }},{{ hardeningkitty_total_checks }},{{ hardeningkitty_passed }},{{ hardeningkitty_low }},{{ hardeningkitty_medium }},{{ hardeningkitty_high }}
+  delegate_to: localhost
+  when: hardeningkitty_summary_line | length > 0
+
+- name: Write HardeningKitty JSON summary
+  ansible.builtin.copy:
+    dest: "{{ hardeningkitty_local_summary_json }}"
+    mode: "0644"
+    content: |
+      {
+        "host": "{{ inventory_hostname }}",
+        "finding_list": "{{ hardeningkitty_finding_list }}",
+        "score": {{ hardeningkitty_score }},
+        "total_checks": {{ hardeningkitty_total_checks }},
+        "passed": {{ hardeningkitty_passed }},
+        "low": {{ hardeningkitty_low }},
+        "medium": {{ hardeningkitty_medium }},
+        "high": {{ hardeningkitty_high }},
+        "summary": "{{ hardeningkitty_summary_line | regex_replace('^\\[\\*\\]\\s*', '') }}"
+      }
+  delegate_to: localhost
+  when: hardeningkitty_summary_line | length > 0

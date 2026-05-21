@@ -4,6 +4,7 @@ pipeline_local_reports_root: "{{ pipeline_local_root }}/reports"
 
 pipeline_remote_root: 'C:\\CIS-Automation'
 pipeline_remote_script_root: '{{ pipeline_remote_root }}\\Scripts'
+pipeline_remote_common_root: '{{ pipeline_remote_root }}\\common'
 pipeline_remote_reports_json: '{{ pipeline_remote_root }}\\Reports\\JSON'
 pipeline_remote_reports_html: '{{ pipeline_remote_root }}\\Reports\\HTML'
 

@@ -7,16 +7,52 @@
 - name: Build Windows account candidate lists
   ansible.builtin.set_fact:
     windows_runtime_hosts: "{{ query('inventory_hostnames', 'windows') }}"
-    windows_account_candidates:
-      - name: "{{ windows_inventory_vars.windows_default_admin_account_name }}"
-        password: "{{ windows_inventory_vars.windows_initial_admin_password }}"
-      - name: "{{ windows_inventory_vars.windows_identity_admin_target_name }}"
-        password: "{{ windows_inventory_vars.windows_identity_admin_password }}"
+    windows_account_candidates: >-
+      {{
+        [
+          {
+            'name': windows_inventory_vars.windows_active_admin_account_name,
+            'password': windows_inventory_vars.ansible_password
+          },
+          {
+            'name': windows_inventory_vars.windows_default_admin_account_name,
+            'password': windows_inventory_vars.windows_initial_admin_password
+          }
+        ]
+        +
+        (
+          [
+            {
+              'name': (windows_inventory_vars.windows_identity_admin_target_name | default('')),
+              'password': (windows_inventory_vars.windows_identity_admin_password | default(''))
+            }
+          ]
+          if (
+            (windows_inventory_vars.windows_identity_admin_target_name | default('') | trim | length > 0)
+            and
+            (windows_inventory_vars.windows_identity_admin_password | default('') | trim | length > 0)
+          )
+          else []
+        )
+      }}
     windows_account_candidate_prefixes: >-
       {{
         windows_inventory_vars.windows_account_candidate_prefixes
         | default(windows_runtime_resolver_account_candidate_prefixes_default)
       }}
+    windows_runtime_resolver_safe_mode: "{{ windows_inventory_vars.windows_runtime_resolver_safe_mode | default(false) }}"
+
+
+- name: Deduplicate Windows account candidates and prefixes
+  ansible.builtin.set_fact:
+    windows_account_candidates: "{{ windows_account_candidates | unique(attribute='name') | list }}"
+    windows_account_candidate_prefixes: "{{ windows_account_candidate_prefixes | unique | list }}"
+
+- name: Reduce probing surface in safe mode (first account + first prefix only)
+  ansible.builtin.set_fact:
+    windows_account_candidates: "{{ windows_account_candidates[:1] }}"
+    windows_account_candidate_prefixes: "{{ windows_account_candidate_prefixes[:1] }}"
+  when: windows_runtime_resolver_safe_mode | bool
 
 - name: Register candidate WinRM probe hosts
   ansible.builtin.add_host:

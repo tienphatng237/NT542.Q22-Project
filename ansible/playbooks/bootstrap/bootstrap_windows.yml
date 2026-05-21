@@ -1,5 +1,7 @@
 ---
 - import_playbook: ../pipeline/resolve_windows_runtime.yml
+  vars:
+    windows_runtime_resolver_fail_on_unresolved: false
 
 - name: Phase 0 - Windows Management Bootstrap
   hosts: windows_runtime

@@ -7,16 +7,51 @@
 - name: Build Windows account candidate lists again
   ansible.builtin.set_fact:
     windows_runtime_hosts: "{{ query('inventory_hostnames', 'windows') }}"
-    windows_account_candidates:
-      - name: "{{ windows_inventory_vars.windows_default_admin_account_name }}"
-        password: "{{ windows_inventory_vars.windows_initial_admin_password }}"
-      - name: "{{ windows_inventory_vars.windows_identity_admin_target_name }}"
-        password: "{{ windows_inventory_vars.windows_identity_admin_password }}"
+    windows_account_candidates: >-
+      {{
+        [
+          {
+            'name': windows_inventory_vars.windows_active_admin_account_name,
+            'password': windows_inventory_vars.ansible_password
+          },
+          {
+            'name': windows_inventory_vars.windows_default_admin_account_name,
+            'password': windows_inventory_vars.windows_initial_admin_password
+          }
+        ]
+        +
+        (
+          [
+            {
+              'name': (windows_inventory_vars.windows_identity_admin_target_name | default('')),
+              'password': (windows_inventory_vars.windows_identity_admin_password | default(''))
+            }
+          ]
+          if (
+            (windows_inventory_vars.windows_identity_admin_target_name | default('') | trim | length > 0)
+            and
+            (windows_inventory_vars.windows_identity_admin_password | default('') | trim | length > 0)
+          )
+          else []
+        )
+      }}
     windows_account_candidate_prefixes: >-
       {{
         windows_inventory_vars.windows_account_candidate_prefixes
         | default(windows_runtime_resolver_account_candidate_prefixes_default)
       }}
+    windows_runtime_resolver_safe_mode: "{{ windows_inventory_vars.windows_runtime_resolver_safe_mode | default(false) }}"
+
+- name: Deduplicate Windows account candidates and prefixes
+  ansible.builtin.set_fact:
+    windows_account_candidates: "{{ windows_account_candidates | unique(attribute='name') | list }}"
+    windows_account_candidate_prefixes: "{{ windows_account_candidate_prefixes | unique | list }}"
+
+- name: Keep candidate list aligned with safe mode in runtime selection
+  ansible.builtin.set_fact:
+    windows_account_candidates: "{{ windows_account_candidates[:1] }}"
+    windows_account_candidate_prefixes: "{{ windows_account_candidate_prefixes[:1] }}"
+  when: windows_runtime_resolver_safe_mode | bool
 
 - name: Determine working Windows runtime account per host
   ansible.builtin.set_fact:
@@ -62,7 +97,20 @@
       Could not resolve a working WinRM account for {{ item.item }}.
       Tried prefixes {{ windows_account_candidate_prefixes | join(', ') }} with account names {{ windows_account_candidates | map(attribute='name') | join(', ') }}.
   loop: "{{ windows_runtime_selection.results }}"
-  when: item.ansible_facts.windows_runtime_selected_user | trim | length == 0
+  when:
+    - windows_runtime_resolver_fail_on_unresolved | bool
+    - item.ansible_facts.windows_runtime_selected_user | trim | length == 0
+
+- name: Warn when a host has no working WinRM account and fail-on-unresolved is disabled
+  ansible.builtin.debug:
+    msg: >-
+      Skipping unresolved host {{ item.item }}.
+      No working WinRM account found with prefixes {{ windows_account_candidate_prefixes | join(', ') }}
+      and account names {{ windows_account_candidates | map(attribute='name') | join(', ') }}.
+  loop: "{{ windows_runtime_selection.results }}"
+  when:
+    - not (windows_runtime_resolver_fail_on_unresolved | bool)
+    - item.ansible_facts.windows_runtime_selected_user | trim | length == 0
 
 - name: Add runtime Windows hosts with resolved account context
   ansible.builtin.add_host:
@@ -85,12 +133,13 @@
     windows_active_admin_account_name: "{{ item.ansible_facts.windows_runtime_selected_account_name }}"
     windows_default_admin_account_name: "{{ windows_inventory_vars.windows_default_admin_account_name }}"
     windows_default_guest_account_name: "{{ windows_inventory_vars.windows_default_guest_account_name }}"
-    windows_identity_admin_target_name: "{{ windows_inventory_vars.windows_identity_admin_target_name }}"
-    windows_identity_guest_target_name: "{{ windows_inventory_vars.windows_identity_guest_target_name }}"
+    windows_identity_admin_target_name: "{{ windows_inventory_vars.windows_identity_admin_target_name | default('') }}"
+    windows_identity_guest_target_name: "{{ windows_inventory_vars.windows_identity_guest_target_name | default('') }}"
     windows_initial_admin_password: "{{ windows_inventory_vars.windows_initial_admin_password }}"
-    windows_identity_admin_password: "{{ windows_inventory_vars.windows_identity_admin_password }}"
+    windows_identity_admin_password: "{{ windows_inventory_vars.windows_identity_admin_password | default('') }}"
     hardeningkitty_profile: "{{ hostvars[item.item].hardeningkitty_profile | default('') }}"
   loop: "{{ windows_runtime_selection.results }}"
+  when: item.ansible_facts.windows_runtime_selected_user | trim | length > 0
 
 - name: Show resolved Windows runtime accounts
   ansible.builtin.debug:

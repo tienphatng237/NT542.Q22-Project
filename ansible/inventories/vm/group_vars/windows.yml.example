@@ -3,7 +3,7 @@ ansible_connection: winrm
 # Default WinRM HTTP port (5985). Use 5986 when WinRM HTTPS is configured.
 ansible_port: 5985
 # Authentication transport for WinRM.
-ansible_winrm_transport: basic
+ansible_winrm_transport: ntlm
 # Ignore TLS certificate validation (safe for lab/self-signed cert environments).
 ansible_winrm_server_cert_validation: ignore
 # Per-operation timeout (seconds) for WinRM commands.
@@ -20,24 +20,33 @@ windows_initial_admin_password: CHANGE_ME_INITIAL
 
 # Centralized Identity hardening targets.
 # Change these values if the CIS rename controls should use different names.
-windows_identity_admin_target_name: SysAdmin_Hardened
-windows_identity_guest_target_name: Guest_Hardened
+# windows_identity_admin_target_name: SysAdmin_Hardened
+# windows_identity_guest_target_name: Guest_Hardened
 
 # Managed password that Identity remediation will apply to the hardened admin account.
-windows_identity_admin_password: CHANGE_ME_HARDENED
+# windows_identity_admin_password: CHANGE_ME_HARDENED
+# NOTE: Current default flow keeps account-rename logic commented in
+# Identity-Access-Control remediation. Keep these values for future enablement.
 
 # Candidate prefixes Ansible should try when auto-detecting the working WinRM account.
 windows_account_candidate_prefixes:
   - .\\
   - ""
-  - group7.local\\
-  - group7\\
 
-# Keep this aligned with the account name that currently exists on the VM.
-# Fresh VM: Administrator
-# After Identity remediation runs once: usually SysAdmin_Hardened
+# Track both account states used by the pipeline lifecycle.
+# Fresh VM (before Identity remediation): built-in Administrator + windows_initial_admin_password
+# After Identity remediation: SysAdmin_Hardened + windows_identity_admin_password
 windows_active_admin_account_name: Administrator
 
-# Base inventory credentials: kept literal for direct Ansible commands and bootstrap on fresh VMs.
+# Runtime credentials used by Ansible resolver/probe as the current default.
+# Keep aligned with windows_active_admin_account_name.
 ansible_user: Administrator
 ansible_password: CHANGE_ME_INITIAL
+
+# Resolver mode: false = try full candidate matrix; true = first account+prefix only
+windows_runtime_resolver_safe_mode: false
+
+# Identity remediation toggle.
+# false: skip Identity remediation in pipeline Phase 2 (recommended for stable WinRM run).
+# true : run Identity remediation role.
+windows_identity_remediation_enabled: false

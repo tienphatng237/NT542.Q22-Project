@@ -10,7 +10,8 @@
     content: |
       param(
           [string]$ManagementSubnet = '{{ windows_management_subnet }}',
-          [bool]$EnableOpenSSH = {{ '$true' if windows_enable_openssh_fallback else '$false' }}
+          [bool]$EnableOpenSSH = {{ '$true' if windows_enable_openssh_fallback else '$false' }},
+          [bool]$EnableLocalAccountWinRMUacBypass = {{ '$true' if windows_enable_local_account_winrm_uac_bypass else '$false' }}
       )
 
       $ErrorActionPreference = 'Stop'
@@ -22,6 +23,22 @@
           Start-Service -Name WinRM
           Enable-NetFirewallRule -DisplayGroup 'Windows Remote Management' | Out-Null
           Set-NetFirewallRule -DisplayGroup 'Windows Remote Management' -RemoteAddress $ManagementSubnet | Out-Null
+          if ($EnableLocalAccountWinRMUacBypass) {
+              try {
+                  if (-not (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System')) {
+                      New-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Force | Out-Null
+                  }
+                  Set-ItemProperty `
+                      -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' `
+                      -Name 'LocalAccountTokenFilterPolicy' `
+                      -Type DWord `
+                      -Value 1 `
+                      -Force
+              }
+              catch {
+                  Write-Warning "Skip LocalAccountTokenFilterPolicy tuning: $($_.Exception.Message)"
+              }
+          }
       }
 
       function Ensure-OpenSSH {

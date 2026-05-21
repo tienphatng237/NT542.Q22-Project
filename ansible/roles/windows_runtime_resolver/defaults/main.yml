@@ -9,6 +9,7 @@ windows_runtime_resolver_probe_group: windows_account_probe
 windows_runtime_resolver_runtime_group: windows_runtime
 windows_runtime_resolver_runtime_dc_group: domain_controllers_runtime
 windows_runtime_resolver_runtime_member_group: member_servers_runtime
+windows_runtime_resolver_fail_on_unresolved: true
 windows_runtime_resolver_account_candidate_prefixes_default:
   - '.\'
   - ''

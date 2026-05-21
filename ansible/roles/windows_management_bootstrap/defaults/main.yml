@@ -1,6 +1,7 @@
 windows_management_subnet: "192.168.250.0/24"
 windows_enable_openssh_fallback: true
 windows_enable_startup_self_heal: true
+windows_enable_local_account_winrm_uac_bypass: false
 windows_management_remote_root: "C:\\CIS-Automation\\Bootstrap"
 windows_management_script_name: "Ensure-ManagementChannels.ps1"
 windows_management_scheduled_task_name: "CIS-Automation-Ensure-ManagementChannels"

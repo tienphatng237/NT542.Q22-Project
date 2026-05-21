@@ -1,4 +1,6 @@
 ---
 - import_playbook: resolve_windows_runtime.yml
 - import_playbook: audit.yml
-- import_playbook: remediation_followup.yml
+- import_playbook: remediation.yml
+- import_playbook: resolve_windows_runtime.yml
+- import_playbook: post_audit_validate_report.yml

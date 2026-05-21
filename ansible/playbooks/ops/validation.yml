@@ -3,8 +3,9 @@
   hosts: windows
   gather_facts: false
   vars:
-    windows_active_admin_account_name: "{{ windows_identity_admin_target_name }}"
-    ansible_user: ".\\{{ windows_identity_admin_target_name }}"
+    windows_runtime_ops_account_name: "{{ windows_identity_admin_target_name | default(windows_active_admin_account_name | default('Administrator')) }}"
+    windows_active_admin_account_name: "{{ windows_runtime_ops_account_name }}"
+    ansible_user: ".\\{{ windows_runtime_ops_account_name }}"
   tasks:
     - ansible.builtin.include_role:
         name: hardeningkitty_validation

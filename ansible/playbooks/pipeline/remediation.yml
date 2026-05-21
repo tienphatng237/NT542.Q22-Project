@@ -1,0 +1,32 @@
+---
+- name: Phase 2 - Remediation
+  hosts: windows_runtime
+  gather_facts: false
+  tasks:
+    - name: Announce remediation phase
+      ansible.builtin.debug:
+        msg: "Phase 2 - Remediation"
+
+    # Run non-identity remediations first so connection/account changes in Identity
+    # do not break the remaining remediation tasks in this same play.
+    - ansible.builtin.include_role:
+        name: network_services_security
+        tasks_from: remediation.yml
+    - ansible.builtin.include_role:
+        name: auditing_monitoring
+        tasks_from: remediation.yml
+    - ansible.builtin.include_role:
+        name: system_hardening_antimalware
+        tasks_from: remediation.yml
+
+    # Run Identity last because it can rename/reset the active admin account.
+    # Can be disabled for a stable runtime-only pipeline.
+    - ansible.builtin.include_role:
+        name: identity_access_control
+        tasks_from: remediation.yml
+      when: windows_identity_remediation_enabled | default(false) | bool
+
+    # Re-assert WinRM management channel after hardening changes so
+    # the next playbook (resolve/post-audit/report) can reconnect.
+    - ansible.builtin.include_role:
+        name: windows_management_bootstrap

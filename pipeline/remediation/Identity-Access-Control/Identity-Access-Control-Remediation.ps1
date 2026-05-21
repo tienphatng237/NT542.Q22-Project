@@ -187,6 +187,7 @@ foreach ($Group in $GroupedRules) {
                 "BlankPassword" { Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Lsa" -Name "LimitBlankPasswordUse" -Value 1 -Type DWord -Force; Write-Host "[$TimeNow] [ PASS ] $($Rule.CisId) -> Bật Limit local account use of blank passwords" -ForegroundColor Green }
                 
                 "RenameAdmin" {
+                    <#
                     $AdminAccount = Get-LocalUser | Where-Object { $_.SID -like "S-1-5-21-*-500" }
                     $ManagedAdminName = $AdminAccount.Name
 
@@ -204,13 +205,18 @@ foreach ($Group in $GroupedRules) {
                     } else {
                         Write-Host "[$TimeNow] [ WARN ] $($Rule.CisId) -> Chưa cấu hình mật khẩu quản trị được quản lý; giữ nguyên mật khẩu hiện tại" -ForegroundColor Yellow
                     }
+                    #>
+                    Write-Host "[$TimeNow] [ SKIP ] $($Rule.CisId) -> Tam thoi comment logic doi ten/doi mat khau Administrator de on dinh WinRM." -ForegroundColor Yellow
                 }
                 "RenameGuest" {
+                    <#
                     $GuestAccount = Get-LocalUser | Where-Object { $_.SID -like "S-1-5-21-*-501" }
                     if ($GuestAccount.Name -eq "Guest") {
                         Rename-LocalUser -Name "Guest" -NewName $NewGuestName
                         Write-Host "[$TimeNow] [ PASS ] $($Rule.CisId) -> Đã đổi tên Guest thành '$NewGuestName'" -ForegroundColor Green
                     } else { Write-Host "[$TimeNow] [ PASS ] $($Rule.CisId) -> Tài khoản Guest (SID 501) đã mang tên khác mặc định" -ForegroundColor Green }
+                    #>
+                    Write-Host "[$TimeNow] [ SKIP ] $($Rule.CisId) -> Tam thoi comment logic doi ten Guest." -ForegroundColor Yellow
                 }
             }
         } catch {

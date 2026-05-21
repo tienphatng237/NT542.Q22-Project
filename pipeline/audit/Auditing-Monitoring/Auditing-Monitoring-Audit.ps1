@@ -6,23 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$BaseDir = "C:\CIS-Automation"
-$Paths = @(
-    "$BaseDir\Scripts",
-    "$BaseDir\Reports\HTML",
-    "$BaseDir\Reports\JSON",
-    "$BaseDir\Logs"
-)
-foreach ($PathItem in $Paths) {
-    if (-not (Test-Path $PathItem)) {
-        New-Item -ItemType Directory -Force -Path $PathItem | Out-Null
-    }
-}
-
-$StartTime = Get-Date
-$TimestampFile = $StartTime.ToString("yyyyMMdd_HHmmss")
-$TimestampDisplay = $StartTime.ToString("dd/MM/yyyy HH:mm:ss")
-$OSInfo = (Get-CimInstance Win32_OperatingSystem).Caption
+$CommonContextScript = Join-Path $PSScriptRoot "..\..\common\Pipeline-Context.ps1"
+. $CommonContextScript -CallerScriptRoot $PSScriptRoot
 
 $Results = @()
 
@@ -243,44 +228,5 @@ Write-Host "Pass Rate (%) : $PassPct"
 Write-Host "=====================`n"
 $Results | Format-Table CIS_ID,Type,Expected,Current,Status -AutoSize
 
-$JsonPath = "$BaseDir\Reports\JSON\Auditing-Monitoring-Audit-$TimestampFile.json"
-$HtmlPath = "$BaseDir\Reports\HTML\Auditing-Monitoring-Audit-$TimestampFile.html"
 
-$Results | ConvertTo-Json -Depth 5 | Out-File -FilePath $JsonPath -Encoding UTF8
-
-$Head = @"
-<style>
-body { font-family: Segoe UI, Arial, sans-serif; padding: 20px; color: #222; }
-h1 { margin-bottom: 0; }
-.meta { margin-top: 4px; margin-bottom: 16px; color: #555; }
-.summary { margin: 12px 0 18px 0; font-weight: 600; }
-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-th, td { border: 1px solid #d9d9d9; padding: 6px 8px; text-align: left; vertical-align: top; }
-th { background: #f3f6fa; }
-.pass { color: #0a7d34; font-weight: 600; }
-.fail { color: #c62828; font-weight: 600; }
-</style>
-"@
-
-$HtmlTableRows = $Results | Select-Object CIS_ID,Type,Description,Expected,Current,Status |
-    ConvertTo-Html -Fragment
-$HtmlDoc = @"
-<html>
-<head>
-<meta charset="UTF-8">
-<title>CIS Audit Report - Auditing & Monitoring</title>
-$Head
-</head>
-<body>
-<h1>CIS Audit Report - Auditing & Monitoring</h1>
-<div class="meta">Generated: $TimestampDisplay</div>
-<div class="meta">OS: $OSInfo</div>
-<div class="summary">PASS: $PassCount | FAIL: $FailCount | TOTAL: $TotalCount | PASS RATE: $PassPct%</div>
-$HtmlTableRows
-</body>
-</html>
-"@
-$HtmlDoc | Out-File -FilePath $HtmlPath -Encoding UTF8
-
-Write-Host " [JSON Report] : $JsonPath" -ForegroundColor Yellow
-Write-Host " [HTML Report] : $HtmlPath" -ForegroundColor Yellow
+Write-Host " [INFO] Report export da duoc chuyen sang pha Post-Audit." -ForegroundColor Yellow

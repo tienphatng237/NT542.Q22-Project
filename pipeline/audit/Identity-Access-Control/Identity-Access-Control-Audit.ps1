@@ -1,18 +1,6 @@
 # 1. SETUP DIRECTORIES & TIMESTAMPS
-$BaseDir = "C:\CIS-Automation"
-$Paths = @("$BaseDir\Scripts", "$BaseDir\Reports\HTML", "$BaseDir\Reports\JSON", "$BaseDir\Logs")
-foreach ($p in $Paths) { if (-not (Test-Path $p)) { New-Item -ItemType Directory -Force -Path $p | Out-Null } }
-
-$StartTime = Get-Date
-$TimestampFile = $StartTime.ToString("yyyyMMdd_HHmmss")
-$TimestampDisplay = $StartTime.ToString("dd/MM/yyyy HH:mm:ss")
-$OSInfo = (Get-CimInstance Win32_OperatingSystem).Caption
-
-# Khớp cấu trúc tìm file template giống với Network Script
-$PipelineRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$TemplateDir = Join-Path $PipelineRoot "templates"
-$CssTemplatePath = Join-Path $TemplateDir "cis-audit-report.css"
-$HtmlTemplatePath = Join-Path $TemplateDir "cis-audit-report.html.tpl"
+$CommonContextScript = Join-Path $PSScriptRoot "..\..\common\Pipeline-Context.ps1"
+. $CommonContextScript -CallerScriptRoot $PSScriptRoot -IncludeTemplates
 
 # 2. CONSOLE HEADER
 Clear-Host
@@ -167,86 +155,8 @@ foreach ($Rule in $AuditRules) {
 
 Remove-Item -Path $SecPolPath -Force -ErrorAction SilentlyContinue
 
-# --- XUẤT RA JSON ---
-$Results | ConvertTo-Json -Depth 4 | Out-File "$BaseDir\Reports\JSON\Identity-Audit-$TimestampFile.json" -Encoding UTF8
-
-# --- TẠO BÁO CÁO HTML (DÙNG TEMPLATE) ---
-if (-not (Test-Path $CssTemplatePath)) { throw "CSS template not found: $CssTemplatePath" }
-if (-not (Test-Path $HtmlTemplatePath)) { throw "HTML template not found: $HtmlTemplatePath" }
-
-$CssContent = Get-Content -Path $CssTemplatePath -Raw
-$HtmlTemplate = Get-Content -Path $HtmlTemplatePath -Raw
-$StyleBlock = "<style>`n$CssContent`n</style>"
-$TableRows = New-Object System.Collections.Generic.List[string]
-
-$TotalPass = 0; $TotalFail = 0
-$Groups = $Results | Group-Object GrpId
-
-foreach ($Grp in $Groups) {
-    $GrpPass = @($Grp.Group | Where-Object { $_.Status -eq "Pass" }).Count
-    $GrpFail = @($Grp.Group | Where-Object { $_.Status -eq "Fail" }).Count
-    $GrpMax = [int]$Grp.Count
-    $GrpPct = if($GrpMax -gt 0) { [math]::Round(($GrpPass/$GrpMax)*100) } else { 0 }
-    $TotalPass += $GrpPass; $TotalFail += $GrpFail
-    
-    $GrpName = $Grp.Group[0].GrpName
-    $clsGrp = "grp-" + $Grp.Name
-
-    $cGrpPass = if ($GrpPass -gt 0) { "txt-pass" } else { "txt-neutral" }
-    $cGrpFail = if ($GrpFail -gt 0) { "txt-fail" } else { "txt-neutral" }
-
-    $TableRows.Add("<tr class='row-group' onclick=`"toggle('$clsGrp')`"><td class='col-desc'>$($Grp.Name) $GrpName</td><td class='col-num $cGrpPass'>$GrpPass</td><td class='col-num $cGrpFail'>$GrpFail</td><td class='col-num'>$GrpMax.0</td><td class='col-num'>$GrpPct%</td></tr>")
-
-    $SubGroups = $Grp.Group | Group-Object SubId
-    foreach ($Sub in $SubGroups) {
-        $SubPass = @($Sub.Group | Where-Object { $_.Status -eq "Pass" }).Count
-        $SubFail = @($Sub.Group | Where-Object { $_.Status -eq "Fail" }).Count
-        $SubMax = [int]$Sub.Count
-        $SubPct = if($SubMax -gt 0) { [math]::Round(($SubPass/$SubMax)*100) } else { 0 }
-        $SubName = $Sub.Group[0].SubName
-        $clsSub = "sub-" + $Sub.Name.Replace(".","")
-
-        $cSubPass = if ($SubPass -gt 0) { "txt-pass" } else { "txt-neutral" }
-        $cSubFail = if ($SubFail -gt 0) { "txt-fail" } else { "txt-neutral" }
-
-        $TableRows.Add("<tr class='row-subgroup $clsGrp' style='display:none;' onclick=`"toggle('$clsSub')`"><td class='col-desc'>&nbsp;&nbsp;&nbsp;&nbsp;$($Sub.Name) $SubName</td><td class='col-num $cSubPass'>$SubPass</td><td class='col-num $cSubFail'>$SubFail</td><td class='col-num'>$SubMax.0</td><td class='col-num'>$SubPct%</td></tr>")
-
-        foreach ($Item in $Sub.Group) {
-            $iPass = if($Item.Status -eq "Pass"){1}else{0}
-            $iFail = if($Item.Status -eq "Fail"){1}else{0}
-            $iPct = if($iPass -eq 1){100}else{0}
-            
-            $cItemPass = if($iPass -eq 1){"txt-pass"}else{"txt-neutral"}
-            $cItemFail = if($iFail -eq 1){"txt-fail"}else{"txt-neutral"}
-            
-            $TableRows.Add("<tr class='row-item $clsGrp $clsSub'><td class='col-desc' style='color:#555;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$($Item.CisId) $($Item.Desc)</td><td class='col-num $cItemPass'>$iPass</td><td class='col-num $cItemFail'>$iFail</td><td class='col-num'>1.0</td><td class='col-num'>$iPct%</td></tr>")
-        }
-    }
-}
-
-$GrandMax = $TotalPass + $TotalFail
-$GrandPct = if($GrandMax -gt 0) { [math]::Round(($TotalPass/$GrandMax)*100) } else { 0 }
-$TableRows.Add("<tr class='footer-row'><td class='col-desc' style='text-align:right'>Total</td><td class='col-num txt-pass'>$TotalPass</td><td class='col-num txt-fail'>$TotalFail</td><td class='col-num'>$GrandMax.0</td><td class='col-num'>$GrandPct%</td></tr>")
-
-$FinalHtml = $HtmlTemplate
-$Replacements = @{
-    "{{TITLE}}"        = "CIS Audit Report - Identity & Access"
-    "{{STYLE_BLOCK}}"  = $StyleBlock
-    "{{REPORT_TITLE}}" = "CIS Audit Report - Identity & Access Control (Full)"
-    "{{DISPLAY_TIME}}" = $TimestampDisplay
-    "{{OS_INFO}}"      = $OSInfo
-    "{{TABLE_ROWS}}"   = ($TableRows -join [Environment]::NewLine)
-}
-
-foreach ($k in $Replacements.Keys) {
-    $FinalHtml = $FinalHtml.Replace($k, $Replacements[$k])
-}
-
-$HtmlPath = "$BaseDir\Reports\HTML\Identity-Audit-$TimestampFile.html"
-$FinalHtml | Out-File $HtmlPath -Encoding UTF8
 
 Write-Host "`n===============================================================================" -ForegroundColor Cyan
 Write-Host " QUET HOAN TAT! " -ForegroundColor Green
-Write-Host " [HTML Report] : $HtmlPath" -ForegroundColor Yellow
-Write-Host " [JSON Data]   : $BaseDir\Reports\JSON\Identity-Audit-$TimestampFile.json" -ForegroundColor Yellow
+Write-Host " Report export da duoc chuyen sang pha Post-Audit." -ForegroundColor Yellow
 Write-Host "===============================================================================" -ForegroundColor Cyan

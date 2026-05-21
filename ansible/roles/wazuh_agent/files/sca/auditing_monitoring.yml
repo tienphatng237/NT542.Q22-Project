@@ -1,0 +1,403 @@
+policy:
+  id: "nt542_auditing_monitoring"
+  file: "auditing_monitoring.yml"
+  name: "NT542 - Auditing & Monitoring (Windows Server 2022)"
+  description: "SCA checks generated from NT542 pipeline Auditing & Monitoring audit rules."
+  references:
+    - "https://www.cisecurity.org/benchmark/microsoft_windows_server"
+    - "https://documentation.wazuh.com/current/user-manual/capabilities/sec-config-assessment/creating-custom-policies.html"
+
+checks:
+  - id: 850141
+    title: '17.1.1 Audit Credential Validation'
+    description: 'Audit Credential Validation'
+    compliance:
+      - cis: ['17.1.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce923f-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850142
+    title: '17.1.2 Audit Kerberos Authentication Service'
+    description: 'Audit Kerberos Authentication Service'
+    compliance:
+      - cis: ['17.1.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9242-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850143
+    title: '17.1.3 Audit Kerberos Service Ticket Operations'
+    description: 'Audit Kerberos Service Ticket Operations'
+    compliance:
+      - cis: ['17.1.3']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9240-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850144
+    title: '17.2.1 Audit Application Group Management'
+    description: 'Audit Application Group Management'
+    compliance:
+      - cis: ['17.2.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9239-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850145
+    title: '17.2.2 Audit Computer Account Management'
+    description: 'Audit Computer Account Management'
+    compliance:
+      - cis: ['17.2.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9236-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850146
+    title: '17.2.3 Audit Distribution Group Management'
+    description: 'Audit Distribution Group Management'
+    compliance:
+      - cis: ['17.2.3']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9238-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850147
+    title: '17.2.4 Audit Other Account Management Events'
+    description: 'Audit Other Account Management Events'
+    compliance:
+      - cis: ['17.2.4']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce923a-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850148
+    title: '17.2.5 Audit Security Group Management'
+    description: 'Audit Security Group Management'
+    compliance:
+      - cis: ['17.2.5']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9237-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850149
+    title: '17.2.6 Audit User Account Management'
+    description: 'Audit User Account Management'
+    compliance:
+      - cis: ['17.2.6']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9235-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850150
+    title: '17.3.1 Audit PNP Activity'
+    description: 'Audit PNP Activity'
+    compliance:
+      - cis: ['17.3.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9248-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850151
+    title: '17.3.2 Audit Process Creation'
+    description: 'Audit Process Creation'
+    compliance:
+      - cis: ['17.3.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce922b-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850152
+    title: '17.4.1 Audit Directory Service Access'
+    description: 'Audit Directory Service Access'
+    compliance:
+      - cis: ['17.4.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce923b-69ae-11d9-bed3-505054503030}" /r -> r:Failure'
+
+  - id: 850153
+    title: '17.4.2 Audit Directory Service Changes'
+    description: 'Audit Directory Service Changes'
+    compliance:
+      - cis: ['17.4.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce923c-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850154
+    title: '17.5.1 Audit Account Lockout'
+    description: 'Audit Account Lockout'
+    compliance:
+      - cis: ['17.5.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9217-69ae-11d9-bed3-505054503030}" /r -> r:Failure'
+
+  - id: 850155
+    title: '17.5.2 Audit Group Membership'
+    description: 'Audit Group Membership'
+    compliance:
+      - cis: ['17.5.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9249-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850156
+    title: '17.5.3 Audit Logoff'
+    description: 'Audit Logoff'
+    compliance:
+      - cis: ['17.5.3']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9216-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850157
+    title: '17.5.4 Audit Logon'
+    description: 'Audit Logon'
+    compliance:
+      - cis: ['17.5.4']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9215-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850158
+    title: '17.5.5 Audit Other Logon/Logoff Events'
+    description: 'Audit Other Logon/Logoff Events'
+    compliance:
+      - cis: ['17.5.5']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce921c-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850159
+    title: '17.5.6 Audit Special Logon'
+    description: 'Audit Special Logon'
+    compliance:
+      - cis: ['17.5.6']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce921b-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850160
+    title: '17.6.1 Audit Detailed File Share'
+    description: 'Audit Detailed File Share'
+    compliance:
+      - cis: ['17.6.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9244-69ae-11d9-bed3-505054503030}" /r -> r:Failure'
+
+  - id: 850161
+    title: '17.6.2 Audit File Share'
+    description: 'Audit File Share'
+    compliance:
+      - cis: ['17.6.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9224-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850162
+    title: '17.6.3 Audit Other Object Access Events'
+    description: 'Audit Other Object Access Events'
+    compliance:
+      - cis: ['17.6.3']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9227-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850163
+    title: '17.6.4 Audit Removable Storage'
+    description: 'Audit Removable Storage'
+    compliance:
+      - cis: ['17.6.4']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9245-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850164
+    title: '17.7.1 Audit Audit Policy Change'
+    description: 'Audit Audit Policy Change'
+    compliance:
+      - cis: ['17.7.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce922f-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850165
+    title: '17.7.2 Audit Authentication Policy Change'
+    description: 'Audit Authentication Policy Change'
+    compliance:
+      - cis: ['17.7.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9230-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850166
+    title: '17.7.3 Audit Authorization Policy Change'
+    description: 'Audit Authorization Policy Change'
+    compliance:
+      - cis: ['17.7.3']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9231-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850167
+    title: '17.7.4 Audit MPSSVC Rule-Level Policy Change'
+    description: 'Audit MPSSVC Rule-Level Policy Change'
+    compliance:
+      - cis: ['17.7.4']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9232-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850168
+    title: '17.7.5 Audit Other Policy Change Events'
+    description: 'Audit Other Policy Change Events'
+    compliance:
+      - cis: ['17.7.5']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9234-69ae-11d9-bed3-505054503030}" /r -> r:Failure'
+
+  - id: 850169
+    title: '17.8.1 Audit Sensitive Privilege Use'
+    description: 'Audit Sensitive Privilege Use'
+    compliance:
+      - cis: ['17.8.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9228-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850170
+    title: '17.9.1 Audit IPsec Driver'
+    description: 'Audit IPsec Driver'
+    compliance:
+      - cis: ['17.9.1']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9213-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850171
+    title: '17.9.2 Audit Other System Events'
+    description: 'Audit Other System Events'
+    compliance:
+      - cis: ['17.9.2']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9214-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850172
+    title: '17.9.3 Audit Security State Change'
+    description: 'Audit Security State Change'
+    compliance:
+      - cis: ['17.9.3']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9210-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850173
+    title: '17.9.4 Audit Security System Extension'
+    description: 'Audit Security System Extension'
+    compliance:
+      - cis: ['17.9.4']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9211-69ae-11d9-bed3-505054503030}" /r -> r:Success'
+
+  - id: 850174
+    title: '17.9.5 Audit System Integrity'
+    description: 'Audit System Integrity'
+    compliance:
+      - cis: ['17.9.5']
+    condition: all
+    rules:
+      - 'c:auditpol /get /subcategory:"{0cce9212-69ae-11d9-bed3-505054503030}" /r -> r:Success\s+and\s+Failure'
+
+  - id: 850175
+    title: '18.10.26.1.1 Application: Control Event Log behavior when the log file reaches its maximum size'
+    description: 'Application: Control Event Log behavior when the log file reaches its maximum size'
+    compliance:
+      - cis: ['18.10.26.1.1']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Application'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Application -> Retention'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Application -> Retention -> '
+
+  - id: 850176
+    title: '18.10.26.1.2 Application: Specify the maximum log file size (KB)'
+    description: 'Application: Specify the maximum log file size (KB)'
+    compliance:
+      - cis: ['18.10.26.1.2']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Application'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Application -> MaxSize'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Application -> MaxSize -> '
+
+  - id: 850177
+    title: '18.10.26.2.1 Security: Control Event Log behavior when the log file reaches its maximum size'
+    description: 'Security: Control Event Log behavior when the log file reaches its maximum size'
+    compliance:
+      - cis: ['18.10.26.2.1']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Security'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Security -> Retention'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Security -> Retention -> '
+
+  - id: 850178
+    title: '18.10.26.2.2 Security: Specify the maximum log file size (KB)'
+    description: 'Security: Specify the maximum log file size (KB)'
+    compliance:
+      - cis: ['18.10.26.2.2']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Security'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Security -> MaxSize'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Security -> MaxSize -> '
+
+  - id: 850179
+    title: '18.10.26.3.1 Setup: Control Event Log behavior when the log file reaches its maximum size'
+    description: 'Setup: Control Event Log behavior when the log file reaches its maximum size'
+    compliance:
+      - cis: ['18.10.26.3.1']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Setup'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Setup -> Retention'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Setup -> Retention -> '
+
+  - id: 850180
+    title: '18.10.26.3.2 Setup: Specify the maximum log file size (KB)'
+    description: 'Setup: Specify the maximum log file size (KB)'
+    compliance:
+      - cis: ['18.10.26.3.2']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Setup'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Setup -> MaxSize'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\Setup -> MaxSize -> n:^(\d+)$ compare >= '
+
+  - id: 850181
+    title: '18.10.26.4.1 System: Control Event Log behavior when the log file reaches its maximum size'
+    description: 'System: Control Event Log behavior when the log file reaches its maximum size'
+    compliance:
+      - cis: ['18.10.26.4.1']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\System'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\System -> Retention'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\System -> Retention -> '
+
+  - id: 850182
+    title: '18.10.26.4.2 System: Specify the maximum log file size (KB)'
+    description: 'System: Specify the maximum log file size (KB)'
+    compliance:
+      - cis: ['18.10.26.4.2']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\System'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\System -> MaxSize'
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\EventLog\System -> MaxSize -> n:^(\d+)$ compare >= '

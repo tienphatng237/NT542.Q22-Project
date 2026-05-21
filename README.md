@@ -44,7 +44,9 @@ Hạ tầng lab được triển khai bằng Terraform theo 2 stack tách biệt
 - `kvm/terraform/windows`: tạo 3 máy Windows (`dc01`, `member01`, `fs01`) và network dùng chung `windows-lab-net`
 - `kvm/terraform/linux/wazuh`: tạo máy Linux `log01` chạy Wazuh và nối vào cùng network
 
-Lưu ý quan trọng: phải `apply` stack Windows trước, sau đó mới `apply` stack Linux để bảo đảm network `windows-lab-net` đã tồn tại.
+Lưu ý quan trọng:
+- Phải `apply` stack Windows trước, sau đó mới `apply` stack Linux để bảo đảm network `windows-lab-net` đã tồn tại.
+- Bộ mã hạ tầng này chỉ chạy trên môi trường Linux kernel có hỗ trợ ảo hóa `KVM/QEMU`.
 
 ### 3.1 Triển khai hạ tầng Windows
 
@@ -155,3 +157,66 @@ ls -la tooling/hardeningkitty/lists | grep -E "windows_server_2022_21h2_(dc|memb
 ```
 
 ## 5. Triển khai quy trình benchmark
+
+Quy trình benchmark trong đồ án được chạy theo vòng đời chuẩn:
+`Bootstrap -> Audit -> Remediation -> Post-Audit -> Validation (HardeningKitty) -> Report`.
+
+### 5.1 Chạy toàn bộ pipeline (khuyến nghị)
+
+```bash
+cd ansible
+
+# B1: Bootstrap kênh quản trị WinRM ổn định trước
+ansible-playbook -i inventories/vm/windows.ini playbooks/bootstrap/bootstrap_windows.yml
+
+# B2: Chạy full pipeline benchmark
+ansible-playbook -i inventories/vm/windows.ini playbooks/pipeline/pipeline.yml
+```
+
+### 5.2 Chạy theo từng pha (khi cần debug)
+
+```bash
+cd ansible
+
+# Resolve runtime account WinRM
+ansible-playbook -i inventories/vm/windows.ini playbooks/pipeline/resolve_windows_runtime.yml
+
+# Audit
+ansible-playbook -i inventories/vm/windows.ini playbooks/ops/audit.yml
+
+# Remediation
+ansible-playbook -i inventories/vm/windows.ini playbooks/ops/remediation.yml
+
+# Post-Audit
+ansible-playbook -i inventories/vm/windows.ini playbooks/ops/post_audit.yml
+
+# Validation (HardeningKitty)
+ansible-playbook -i inventories/vm/windows.ini playbooks/ops/validation.yml
+
+# Report
+ansible-playbook -i inventories/vm/windows.ini playbooks/ops/report.yml
+```
+
+### 5.3 Vị trí kết quả
+
+- Report pipeline (HTML/JSON/CSV) lưu tại: `pipeline/reports/<host>/<module>/`
+- Log thực thi script trên Windows: `C:\CIS-Automation\Logs\`
+- Kết quả HardeningKitty được Ansible thu về thư mục report theo từng host.
+
+### 5.4 Kiểm chứng giám sát tập trung bằng Wazuh
+
+Sau khi pipeline hoàn tất, chạy Wazuh để giám sát định kỳ và chấm SCA tập trung:
+
+```bash
+cd ansible
+ansible-playbook -i inventories/vm/log_server.ini -i inventories/vm/windows.ini playbooks/wazuh/wazuh.yml
+```
+
+Trong cấu hình hiện tại, agent dùng custom policy:
+`cis_win2022_v5_custom_nt542.yml`.
+
+### 5.5 Lưu ý vận hành
+
+- Nếu vừa recreate VM, luôn chạy lại `bootstrap_windows.yml` trước pipeline.
+- Nếu WinRM báo `credentials were rejected`, kiểm tra lại account runtime và trạng thái dịch vụ WinRM trên host.
+- Nếu cần dọn report cũ trước khi benchmark lại, dọn trong `pipeline/reports/` để tránh nhầm kết quả.

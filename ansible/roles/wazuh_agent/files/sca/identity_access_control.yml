@@ -1,0 +1,488 @@
+policy:
+  id: "nt542_identity_access_control"
+  file: "identity_access_control.yml"
+  name: "NT542 - Identity & Access Control (Windows Server 2022)"
+  description: "SCA checks generated from NT542 pipeline Identity & Access Control audit rules."
+  references:
+    - "https://www.cisecurity.org/benchmark/microsoft_windows_server"
+    - "https://documentation.wazuh.com/current/user-manual/capabilities/sec-config-assessment/creating-custom-policies.html"
+
+checks:
+  - id: 850001
+    title: '1.1.1 Ensure ''Enforce password history'' is set to ''24 or more password(s)'''
+    description: 'Ensure ''Enforce password history'' is set to ''24 or more password(s)'''
+    compliance:
+      - cis: ['1.1.1']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^PasswordHistorySize\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare >= 24'
+
+  - id: 850002
+    title: '1.1.2 Ensure ''Maximum password age'' is set to ''365 or fewer days'''
+    description: 'Ensure ''Maximum password age'' is set to ''365 or fewer days'''
+    compliance:
+      - cis: ['1.1.2']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^MaximumPasswordAge\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare <= 365'
+
+  - id: 850003
+    title: '1.1.3 Ensure ''Minimum password age'' is set to ''1 or more day(s)'''
+    description: 'Ensure ''Minimum password age'' is set to ''1 or more day(s)'''
+    compliance:
+      - cis: ['1.1.3']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^MinimumPasswordAge\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare >= 1'
+
+  - id: 850004
+    title: '1.1.4 Ensure ''Minimum password length'' is set to ''14 or more'''
+    description: 'Ensure ''Minimum password length'' is set to ''14 or more'''
+    compliance:
+      - cis: ['1.1.4']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^MinimumPasswordLength\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare >= 14'
+
+  - id: 850005
+    title: '1.1.5 Ensure ''Password must meet complexity requirements'' is set to ''Enabled'''
+    description: 'Ensure ''Password must meet complexity requirements'' is set to ''Enabled'''
+    compliance:
+      - cis: ['1.1.5']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^PasswordComplexity\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare == 1'
+
+  - id: 850006
+    title: '1.1.6 Ensure ''Relax minimum password length limits'' is set to ''Enabled'''
+    description: 'Ensure ''Relax minimum password length limits'' is set to ''Enabled'''
+    compliance:
+      - cis: ['1.1.6']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\SAM'
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\SAM -> RelaxMinimumPasswordLengthLimits'
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\SAM -> RelaxMinimumPasswordLengthLimits -> 1'
+
+  - id: 850007
+    title: '1.1.7 Ensure ''Store passwords using reversible encryption'' is set to ''Disabled'''
+    description: 'Ensure ''Store passwords using reversible encryption'' is set to ''Disabled'''
+    compliance:
+      - cis: ['1.1.7']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^ClearTextPassword\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare == 0'
+
+  - id: 850008
+    title: '1.2.1 Ensure ''Account lockout duration'' is set to ''15 or more minute(s)'''
+    description: 'Ensure ''Account lockout duration'' is set to ''15 or more minute(s)'''
+    compliance:
+      - cis: ['1.2.1']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^LockoutDuration\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare >= 15'
+
+  - id: 850009
+    title: '1.2.2 Ensure ''Account lockout threshold'' is set to ''5 or fewer'''
+    description: 'Ensure ''Account lockout threshold'' is set to ''5 or fewer'''
+    compliance:
+      - cis: ['1.2.2']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^LockoutBadCount\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare <= 5'
+
+  - id: 850010
+    title: '1.2.3 Ensure ''Allow Administrator account lockout'' is set to ''Enabled'''
+    description: 'Ensure ''Allow Administrator account lockout'' is set to ''Enabled'''
+    compliance:
+      - cis: ['1.2.3']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -> AllowAdministratorLockout -> 1'
+
+  - id: 850011
+    title: '1.2.4 Ensure ''Reset account lockout counter after'' is set to ''15 or more'''
+    description: 'Ensure ''Reset account lockout counter after'' is set to ''15 or more'''
+    compliance:
+      - cis: ['1.2.4']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^ResetLockoutCount\s*=\s*(\d+)" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value }" -> n:^(\d+)$ compare >= 15'
+
+  - id: 850012
+    title: '2.2.1 Access Credential Manager as a trusted caller'
+    description: 'Access Credential Manager as a trusted caller'
+    compliance:
+      - cis: ['2.2.1']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeTrustedCredManAccessPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:^$'
+
+  - id: 850013
+    title: '2.2.2 Access this computer from the network'
+    description: 'Access this computer from the network'
+    compliance:
+      - cis: ['2.2.2']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeNetworkLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850014
+    title: '2.2.4 Act as part of the operating system'
+    description: 'Act as part of the operating system'
+    compliance:
+      - cis: ['2.2.4']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeTcbPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:^$'
+
+  - id: 850015
+    title: '2.2.5 Add workstations to domain'
+    description: 'Add workstations to domain'
+    compliance:
+      - cis: ['2.2.5']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeMachineAccountPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850016
+    title: '2.2.6 Adjust memory quotas for a process'
+    description: 'Adjust memory quotas for a process'
+    compliance:
+      - cis: ['2.2.6']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeIncreaseQuotaPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850017
+    title: '2.2.7 Allow log on locally'
+    description: 'Allow log on locally'
+    compliance:
+      - cis: ['2.2.7']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeInteractiveLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850018
+    title: '2.2.9 Allow log on through Remote Desktop Services'
+    description: 'Allow log on through Remote Desktop Services'
+    compliance:
+      - cis: ['2.2.9']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeRemoteInteractiveLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850019
+    title: '2.2.11 Back up files and directories'
+    description: 'Back up files and directories'
+    compliance:
+      - cis: ['2.2.11']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeBackupPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850020
+    title: '2.2.12 Change the system time'
+    description: 'Change the system time'
+    compliance:
+      - cis: ['2.2.12']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeSystemtimePrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850021
+    title: '2.2.13 Create a pagefile'
+    description: 'Create a pagefile'
+    compliance:
+      - cis: ['2.2.13']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeCreatePagefilePrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850022
+    title: '2.2.14 Create a token object'
+    description: 'Create a token object'
+    compliance:
+      - cis: ['2.2.14']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeCreateTokenPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:^$'
+
+  - id: 850023
+    title: '2.2.15 Create global objects'
+    description: 'Create global objects'
+    compliance:
+      - cis: ['2.2.15']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeCreateGlobalPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850024
+    title: '2.2.16 Create permanent shared objects'
+    description: 'Create permanent shared objects'
+    compliance:
+      - cis: ['2.2.16']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeCreatePermanentPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:^$'
+
+  - id: 850025
+    title: '2.2.17 Create symbolic links'
+    description: 'Create symbolic links'
+    compliance:
+      - cis: ['2.2.17']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeCreateSymbolicLinkPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850026
+    title: '2.2.19 Debug programs'
+    description: 'Debug programs'
+    compliance:
+      - cis: ['2.2.19']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeDebugPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850027
+    title: '2.2.20 Deny access from network'
+    description: 'Deny access from network'
+    compliance:
+      - cis: ['2.2.20']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeDenyNetworkLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-546'
+
+  - id: 850028
+    title: '2.2.22 Deny log on as a batch job'
+    description: 'Deny log on as a batch job'
+    compliance:
+      - cis: ['2.2.22']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeDenyBatchLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-546'
+
+  - id: 850029
+    title: '2.2.23 Deny log on as a service'
+    description: 'Deny log on as a service'
+    compliance:
+      - cis: ['2.2.23']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeDenyServiceLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-546'
+
+  - id: 850030
+    title: '2.2.24 Deny log on locally'
+    description: 'Deny log on locally'
+    compliance:
+      - cis: ['2.2.24']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeDenyInteractiveLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-546'
+
+  - id: 850031
+    title: '2.2.25 Deny log on through RDS'
+    description: 'Deny log on through RDS'
+    compliance:
+      - cis: ['2.2.25']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeDenyRemoteInteractiveLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-546'
+
+  - id: 850032
+    title: '2.2.27 Enable trusted for delegation'
+    description: 'Enable trusted for delegation'
+    compliance:
+      - cis: ['2.2.27']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeEnableDelegationPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850033
+    title: '2.2.29 Force shutdown from a remote system'
+    description: 'Force shutdown from a remote system'
+    compliance:
+      - cis: ['2.2.29']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeRemoteShutdownPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850034
+    title: '2.2.30 Generate security audits'
+    description: 'Generate security audits'
+    compliance:
+      - cis: ['2.2.30']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeAuditPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-19'
+
+  - id: 850035
+    title: '2.2.31 Impersonate a client after authentication'
+    description: 'Impersonate a client after authentication'
+    compliance:
+      - cis: ['2.2.31']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeImpersonatePrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850036
+    title: '2.2.33 Increase scheduling priority'
+    description: 'Increase scheduling priority'
+    compliance:
+      - cis: ['2.2.33']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeIncreaseBasePriorityPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850037
+    title: '2.2.34 Load and unload device drivers'
+    description: 'Load and unload device drivers'
+    compliance:
+      - cis: ['2.2.34']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeLoadDriverPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850038
+    title: '2.2.35 Lock pages in memory'
+    description: 'Lock pages in memory'
+    compliance:
+      - cis: ['2.2.35']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeLockMemoryPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:^$'
+
+  - id: 850039
+    title: '2.2.36 Log on as a batch job'
+    description: 'Log on as a batch job'
+    compliance:
+      - cis: ['2.2.36']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeBatchLogonRight\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850040
+    title: '2.2.37 Manage auditing and security log'
+    description: 'Manage auditing and security log'
+    compliance:
+      - cis: ['2.2.37']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeSecurityPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850041
+    title: '2.2.39 Modify an object label'
+    description: 'Modify an object label'
+    compliance:
+      - cis: ['2.2.39']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeRelabelPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:^$'
+
+  - id: 850042
+    title: '2.2.40 Modify firmware environment values'
+    description: 'Modify firmware environment values'
+    compliance:
+      - cis: ['2.2.40']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeSystemEnvironmentPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850043
+    title: '2.2.41 Perform volume maintenance tasks'
+    description: 'Perform volume maintenance tasks'
+    compliance:
+      - cis: ['2.2.41']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeManageVolumePrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850044
+    title: '2.2.42 Profile single process'
+    description: 'Profile single process'
+    compliance:
+      - cis: ['2.2.42']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeProfileSingleProcessPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850045
+    title: '2.2.44 Replace a process level token'
+    description: 'Replace a process level token'
+    compliance:
+      - cis: ['2.2.44']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeAssignPrimaryTokenPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-19'
+
+  - id: 850046
+    title: '2.2.45 Restore files and directories'
+    description: 'Restore files and directories'
+    compliance:
+      - cis: ['2.2.45']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeRestorePrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850047
+    title: '2.2.46 Shut down the system'
+    description: 'Shut down the system'
+    compliance:
+      - cis: ['2.2.46']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeShutdownPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850048
+    title: '2.2.47 Synchronize directory service data'
+    description: 'Synchronize directory service data'
+    compliance:
+      - cis: ['2.2.47']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeSyncAgentPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:^$'
+
+  - id: 850049
+    title: '2.2.48 Take ownership of files or other objects'
+    description: 'Take ownership of files or other objects'
+    compliance:
+      - cis: ['2.2.48']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "$cfg=$env:TEMP+''\\wz_id_secpol.cfg''; secedit /export /cfg $cfg /quiet | Out-Null; $m=(Get-Content $cfg | Select-String "^SeTakeOwnershipPrivilege\s*=\s*(.*)$" | Select-Object -First 1).Matches; if ($m.Count -gt 0) { $m[0].Groups[1].Value.Trim() }" -> r:S\-1\-5\-32\-544'
+
+  - id: 850050
+    title: '2.3.1.1 Ensure ''Accounts: Guest account status'' is set to ''Disabled'''
+    description: 'Ensure ''Accounts: Guest account status'' is set to ''Disabled'''
+    compliance:
+      - cis: ['2.3.1.1']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "(Get-LocalUser -Name Guest -ErrorAction SilentlyContinue).Enabled" -> r:^False$'
+
+  - id: 850051
+    title: '2.3.1.2 Ensure ''Accounts: Limit local account use of blank passwords'' is ''Enabled'''
+    description: 'Ensure ''Accounts: Limit local account use of blank passwords'' is ''Enabled'''
+    compliance:
+      - cis: ['2.3.1.2']
+    condition: all
+    rules:
+      - 'r:HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Lsa -> LimitBlankPasswordUse -> 1'
+
+  - id: 850052
+    title: '2.3.1.3 Configure ''Accounts: Rename administrator account'''
+    description: 'Configure ''Accounts: Rename administrator account'''
+    compliance:
+      - cis: ['2.3.1.3']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "(Get-LocalUser | Where-Object {$_.SID -like S-1-5-21-*-500} | Select-Object -ExpandProperty Name -First 1)" -> !r:^Administrator$'
+
+  - id: 850053
+    title: '2.3.1.4 Configure ''Accounts: Rename guest account'''
+    description: 'Configure ''Accounts: Rename guest account'''
+    compliance:
+      - cis: ['2.3.1.4']
+    condition: all
+    rules:
+      - 'c:powershell -NoProfile -Command "(Get-LocalUser | Where-Object {$_.SID -like S-1-5-21-*-501} | Select-Object -ExpandProperty Name -First 1)" -> !r:^Guest$'

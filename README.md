@@ -2,32 +2,7 @@
 # TRIỂN KHAI BẢO MẬT CHO HỆ THỐNG WINDOWS SERVER 2022 THEO TIÊU CHUẨN CIS BENCHMARK 
 
 ## 1. Tổng quan
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
-flowchart LR
-  A[Ansible Control Node] --> B[bootstrap_windows.yml]
-  A --> C[pipeline.yml]
-  A --> D[wazuh.yml]
-
-  B --> E[dc01 - Windows Server 2022]
-  B --> F[member01 - Windows Server 2022]
-  B --> J[fileserver01 - Windows Server 2022]
-
-  C --> E
-  C --> F
-  C --> J
-
-  D --> G[log01 - Wazuh Manager + Dashboard]
-  D --> E
-  D --> F
-  D --> J
-
-  E -->|Agent events + SCA + Inventory| G
-  F -->|Agent events + SCA + Inventory| G
-  J -->|Agent events + SCA + Inventory| G
-
-  G --> I[Compliance / Vulnerability / MITRE]
-```
+![Sơ đồ tổng quan](pictures/diagram.png)
 
 ## 2. Các hạng mục triển khai
 
@@ -220,3 +195,24 @@ Trong cấu hình hiện tại, agent dùng custom policy:
 - Nếu vừa recreate VM, luôn chạy lại `bootstrap_windows.yml` trước pipeline.
 - Nếu WinRM báo `credentials were rejected`, kiểm tra lại account runtime và trạng thái dịch vụ WinRM trên host.
 - Nếu cần dọn report cũ trước khi benchmark lại, dọn trong `pipeline/reports/` để tránh nhầm kết quả.
+
+## 6. Demo thực tế
+
+Xem toàn bộ phần triển khai đồ án tại đây:
+
+👉 **Video Demo:** [▶️ YouTube](https://www.youtube.com/watch?v=uFcGBNIMZTU)
+
+- Thực hiện triển khai cơ sở hạ tầng sử dụng IaC
+- Triển khai vòng đời bảo mật hoàn chỉnh sử dụng Ansible
+- Cấu hình giám sát bảo mật định kì sử dụng Wazuh
+
+## 7. Slide và báo cáo
+
+Xem tại:
+
+- 📄 Báo cáo: [NT542_Group7_FinalReport.pdf](documents/NT542_Group7_FinalReport.pdf)
+- 📄 Slide: [Nhom07_slide.pptx](documents/Nhom07_slide.pptx)
+
+## 8. Kết luận
+
+Đồ án đã xây dựng được quy trình hardening Windows Server 2022 theo chuẩn CIS theo hướng tự động hóa, có thể lặp lại và dễ mở rộng. Mô hình kết hợp Terraform, Ansible, PowerShell, HardeningKitty và Wazuh giúp triển khai, kiểm định và giám sát hệ thống một cách nhất quán trong môi trường lab.

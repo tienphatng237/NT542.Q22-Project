@@ -1,7 +1,6 @@
 # Generated reports and local artifacts
 pipeline/reports/
 !pipeline/reports/.gitkeep
-documents/
 
 # Local secret inventory vars (do not commit credentials)
 ansible/inventories/**/group_vars/windows.yml
